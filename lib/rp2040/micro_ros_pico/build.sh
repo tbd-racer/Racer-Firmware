@@ -17,5 +17,5 @@ if ! [ -x "$LIBRARY_GEN_SCRIPT" ]; then
     exit 1
 fi
 
-docker pull microros/micro_ros_static_library_builder:humble
-docker run -it --rm -v $(pwd):/project microros/micro_ros_static_library_builder:humble
+docker pull microros/micro_ros_static_library_builder:jazzy
+docker run -it --rm -v $(pwd):/project microros/micro_ros_static_library_builder:jazzy

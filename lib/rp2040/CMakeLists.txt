@@ -1,0 +1,8 @@
+add_subdirectory(driver_async_i2c/)
+add_subdirectory(driver_canbus/)
+add_subdirectory(driver_led/)
+add_subdirectory(driver_ssd1306/)
+add_subdirectory(driver_status_strip/)
+add_subdirectory(micro_ros_pico/)
+add_subdirectory(titan_logger/)
+add_subdirectory(titan_safety/)

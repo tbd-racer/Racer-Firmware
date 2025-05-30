@@ -7,7 +7,6 @@ target_sources(titan_safety INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/src/multicore.c
     ${CMAKE_CURRENT_LIST_DIR}/src/safety.c
     ${CMAKE_CURRENT_LIST_DIR}/src/safety_helper.S
-
     ${CMAKE_CURRENT_LIST_DIR}/src/profiler.c
 )
 

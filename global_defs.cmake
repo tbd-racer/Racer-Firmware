@@ -5,7 +5,6 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "CMake Build Type")
 
 # Include sdk
 set(PICO_SDK_PATH ${REPO_DIR}/lib/rp2040/pico-sdk)
-include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Define global initialization function
 function(titan_firmware_init)
@@ -20,16 +19,18 @@ function(titan_firmware_init)
     # Enable all warnings
     add_compile_options(-Wall -Wextra)
 
-    # # Load custom board definitions (must occur before SDK init)
-    # include(${REPO_DIR}/lib/titan_boards/titan_boards.cmake)
+    # Load custom board definitions (must occur before SDK init)
+    include(${REPO_DIR}/lib/rp2040/board_common/board_common.cmake)
+    message("Using board directories: ${PICO_BOARD_HEADER_DIRS}")
 
     # Setup sdk
+    include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
     set(CMAKE_C_STANDARD 11)
     set(CMAKE_CXX_STANDARD 17)
     pico_sdk_init()
 
     # Add support for upload command
-    include(${REPO_DIR}/tools/upload_tool/enable_upload_command.cmake)
+    # include(${REPO_DIR}/tools/upload_tool/enable_upload_command.cmake)
 
     # Import all libraries
     add_subdirectory(${REPO_DIR}/lib/rp2040/ titan_lib)
