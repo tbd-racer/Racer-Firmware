@@ -32,7 +32,7 @@ target_link_libraries(driver_canbus INTERFACE
     pico_sync
     pico_unique_id
 
-    canmore
+    titan_canmore
     titan_debug
     titan_binary_info   # For client id reporting
 )

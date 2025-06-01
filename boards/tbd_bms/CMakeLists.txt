@@ -18,8 +18,8 @@ get_filename_component(REPO_DIR "${CMAKE_CURRENT_LIST_DIR}/${relative_path_to_re
 include(${REPO_DIR}/global_defs.cmake)
 
 # Define Project
-project(smart_battery C CXX ASM)
 titan_firmware_init()
+project(smart_battery C CXX ASM)
 
 # Define executable
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
@@ -27,6 +27,9 @@ add_executable(smart_battery
 	${SOURCES}
 )
 target_include_directories(smart_battery PUBLIC include)
+
+# Set version: major minor (see titan/version.h for more info)
+titan_generate_version_tag(smart_battery 1 0)
 
 # Configure pico-sdk
 pico_enable_stdio_uart(smart_battery 1)
@@ -45,6 +48,7 @@ target_link_libraries(smart_battery PUBLIC
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
+	micro_ros_common
 	hardware_i2c
 	pico_stdlib		  # Pico SDK Standard Library
 )

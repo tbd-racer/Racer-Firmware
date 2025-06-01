@@ -1113,19 +1113,13 @@ eERRORRESULT MCP251XFD_CalculateBitTimeConfiguration(const uint32_t fsysclk, con
   }
 
   eERRORRESULT Error = ERR_OK;
-  if (pConf->Stats != NULL) {
-#ifndef MCP251X_DISABLE_BITRATE_STATS
+  if (pConf->Stats != NULL)
     Error = MCP251XFD_CalculateBitrateStatistics(fsysclk, pConf, desiredDataBitrate == MCP251XFD_NO_CANFD); // If statistics are necessary, then calculate them
-#else
-    Error = ERR__NOT_AVAILABLE;
-#endif
-  }
   return Error;                                                       // If there is an error while calling MCP251XFD_CalculateBitrateStatistics() then return the error
 }
 
 
 
-#ifndef MCP251X_DISABLE_BITRATE_STATS
 //=============================================================================
 // Calculate Bitrate Statistics of a Bit Time configuration
 //=============================================================================
@@ -1191,7 +1185,6 @@ eERRORRESULT MCP251XFD_CalculateBitrateStatistics(const uint32_t fsysclk, MCP251
   }
   return ERR_OK;
 }
-#endif
 
 
 
