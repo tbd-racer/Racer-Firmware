@@ -19,36 +19,35 @@ include(${REPO_DIR}/global_defs.cmake)
 
 # Define Project
 titan_firmware_init()
-project(smart_battery C CXX ASM)
+project(tbd_bms C CXX ASM)
 
 # Define executable
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
-add_executable(smart_battery
+add_executable(tbd_bms
 	${SOURCES}
 )
-target_include_directories(smart_battery PUBLIC include)
+target_include_directories(tbd_bms PUBLIC include)
 
 # Set version: major minor (see titan/version.h for more info)
-titan_generate_version_tag(smart_battery 1 0)
+titan_generate_version_tag(tbd_bms 1 0)
 
 # Configure pico-sdk
-pico_enable_stdio_uart(smart_battery 1)
-pico_set_program_name(smart_battery "Smart Battery Firmware")
+pico_enable_stdio_uart(tbd_bms 1)
+pico_set_program_name(tbd_bms "BMS Firmware")
 
 # Enable the 'make upload' and 'make serial' commands for project
-# titan_use_upload_tool(smart_battery)
-# titan_enable_bootloader(smart_battery can)
+# titan_use_upload_tool(tbd_bms)
+titan_enable_bootloader(tbd_bms can)
 
 # Define linking and targets
-pico_add_extra_outputs(smart_battery)
-target_link_libraries(smart_battery PUBLIC
+pico_add_extra_outputs(tbd_bms)
+target_link_libraries(tbd_bms PUBLIC
 	driver_async_i2c  # Async I2C Driver
 	driver_led		  # Status LED support
 	driver_ssd1306	  # SSD1306 LCD Support
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
-	micro_ros_common
 	hardware_i2c
 	pico_stdlib		  # Pico SDK Standard Library
 )
