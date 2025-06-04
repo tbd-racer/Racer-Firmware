@@ -15,6 +15,7 @@
 #define PERIPH_SDA_PIN      0
 #define PERIPH_SCL_PIN      1
 
+#define BQ40Z80_I2C_PORT    1
 #define BMS_SDA_PIN         7
 #define BMS_SCL_PIN         6
 #define BMS_WAKE_PIN        8

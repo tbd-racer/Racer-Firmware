@@ -1,4 +1,5 @@
 add_subdirectory(driver_async_i2c/)
+add_subdirectory(driver_bq40z80/)
 add_subdirectory(driver_canbus/)
 add_subdirectory(driver_led/)
 add_subdirectory(driver_ssd1306/)

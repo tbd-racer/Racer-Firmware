@@ -1,15 +1,18 @@
 #include <stdio.h>
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
+#include "hardware/i2c.h"
 
 #include "titan/logger.h"
 
-#include "drivers/bq40z80.h"
+#include "driver/bq40z80.h"
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "bq40z80"
 
 #define RETRANSMIT_COUNT 4
+
+#define BQ40Z80_I2C_INST __CONCAT(i2c, BQ40Z80_I2C_PORT)
 
 uint pio_12c_program;
 
@@ -21,13 +24,10 @@ static uint8_t bq_handle_i2c_transfer(uint8_t* bq_reg, uint8_t* rx_buf, uint len
     sleep_ms(1);
 
     while(ret_code && retries < RETRANSMIT_COUNT){
-        // this is a bug in the SM
-        i2c_program_init(pio0, PIO_SM, pio_12c_program, BMS_SDA_PIN, BMS_SCL_PIN);
-
         // send the request to the chip
         ret_code = 0;
-        ret_code |= pio_i2c_write_blocking(pio0, PIO_SM, BQ_ADDR, bq_reg, 1);
-        ret_code |= pio_i2c_read_blocking(pio0, PIO_SM, BQ_ADDR, rx_buf, len);
+        ret_code |= i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, bq_reg, 1, false);
+        ret_code |= i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, rx_buf, len, false);
 
         if(ret_code){
             // let i2c relax a sec, something with smbus and the chip being busy
@@ -53,11 +53,8 @@ uint8_t bq_write_only_transfer(uint8_t* tx_buf, uint len){
     sleep_ms(1);
 
     while(ret_code && retries < RETRANSMIT_COUNT){
-        // this is a bug in the SM
-        i2c_program_init(pio0, PIO_SM, pio_12c_program, BMS_SDA_PIN, BMS_SCL_PIN);
-
         // send the request to the chip
-        ret_code = pio_i2c_write_blocking(pio0, PIO_SM, BQ_ADDR, tx_buf, len);
+        ret_code = i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, tx_buf, len, false);
 
         if(ret_code){
             // let i2c relax a sec, something with smbus and the chip being busy
@@ -83,10 +80,10 @@ uint8_t bq_init() {
     gpio_set_dir(BMS_WAKE_PIN, GPIO_OUT);
     gpio_put(BMS_WAKE_PIN, 0);
 
-    // init PIO I2C
-    pio_12c_program = pio_add_program(pio0, &i2c_program);
-    pio_sm_claim(pio0, PIO_SM);
-    i2c_program_init(pio0, PIO_SM, pio_12c_program, BMS_SDA_PIN, BMS_SCL_PIN);
+    // init I2C
+    i2c_init(BQ40Z80_I2C_INST, 100 * 1000);
+    gpio_set_function(BMS_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(BMS_SCL_PIN, GPIO_FUNC_I2C);
 
     // make the request for the serial #
     uint8_t data[2] = {BQ_READ_CELL_SERI, 0x00};
@@ -96,8 +93,8 @@ uint8_t bq_init() {
         int ret_code = 0;
 
         // send the request to the chip
-        ret_code |= pio_i2c_write_blocking(pio0, PIO_SM, BQ_ADDR, data, 1);
-        ret_code |= pio_i2c_read_blocking(pio0, PIO_SM, BQ_ADDR, data, 2);
+        ret_code |= i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 1, false);
+        ret_code |= i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 2, false);
 
         // Check for valid data
         if(ret_code != 0 || data[0] == 0x00 || data[0] == 0xFF) {

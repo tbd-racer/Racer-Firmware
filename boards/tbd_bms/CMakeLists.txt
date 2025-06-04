@@ -43,8 +43,9 @@ pico_set_program_name(tbd_bms "BMS Firmware")
 pico_add_extra_outputs(tbd_bms)
 target_link_libraries(tbd_bms PUBLIC
 	driver_async_i2c  # Async I2C Driver
-	driver_led		  # Status LED support
+	driver_led		  # Status LED Support
 	driver_ssd1306	  # SSD1306 LCD Support
+	driver_bq40z80    # BQ40z80 BMS Support
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
