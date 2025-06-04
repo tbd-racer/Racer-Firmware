@@ -6,9 +6,9 @@ target_sources(bootloader_runtime INTERFACE
 	${CMAKE_CURRENT_LIST_DIR}/clocks.c
 	${CMAKE_CURRENT_LIST_DIR}/crc32.c
 	${CMAKE_CURRENT_LIST_DIR}/crt0.S
-	${CMAKE_CURRENT_LIST_DIR}/flash.c
-    ${CMAKE_CURRENT_LIST_DIR}/runtime.c
-	${CMAKE_CURRENT_LIST_DIR}/timer.c
+	${CMAKE_CURRENT_LIST_DIR}/src_sdk_override/flash.c
+    ${CMAKE_CURRENT_LIST_DIR}/src_sdk_override/runtime.c
+	${CMAKE_CURRENT_LIST_DIR}/src_sdk_override/timer.c
 )
 
 target_include_directories(bootloader_runtime INTERFACE

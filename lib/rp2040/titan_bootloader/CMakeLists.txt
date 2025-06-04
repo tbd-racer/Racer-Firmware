@@ -11,8 +11,8 @@ if (NOT DEFINED BOOTLOADER_INTERFACE)
 	message(FATAL_ERROR "The bootloader must be configured with the appropriate BOOTLOADER_INTERFACE")
 endif()
 
-project(titan_bootloader C CXX ASM)
 titan_firmware_init()
+project(titan_bootloader C CXX ASM)
 
 # Include the runtime subdirectory
 add_subdirectory(bootloader_runtime)

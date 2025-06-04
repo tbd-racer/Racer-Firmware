@@ -19,8 +19,9 @@ function(titan_firmware_init)
     # Enable all warnings
     add_compile_options(-Wall -Wextra)
 
-    # Load custom board definitions (must occur before SDK init)
+    # Load common board definitions (must occur before SDK init)
     include(${REPO_DIR}/lib/rp2040/board_common/board_common.cmake)
+
     message("Using board directories: ${PICO_BOARD_HEADER_DIRS}")
 
     # Setup sdk

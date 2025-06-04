@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.13)
 
+# set this to allow the firmware init function to find the board dir
+set(BOARD_HEADER_DIR ${CMAKE_SOURCE_DIR}/board)
+
 # The Target Board
-# These can be found in lib/uwrt_boards/include/boards or be set to pico
-# Is is preferred to define pins in the board header file and refer to that name rather than hardcoding names
 # This also impacts the upload_tool for automatic device selection
 set(PICO_BOARD tbd_bms)
-
-# Load custom board definitions (must occur before SDK init)
-# Add boards folder to PICO_BOARD_HEADER_DIRS 
-list(APPEND PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/board)
 
 # Include global definitions
 execute_process(COMMAND git rev-parse --show-cdup
@@ -17,8 +14,11 @@ execute_process(COMMAND git rev-parse --show-cdup
 get_filename_component(REPO_DIR "${CMAKE_CURRENT_LIST_DIR}/${relative_path_to_repository_root}" ABSOLUTE)
 include(${REPO_DIR}/global_defs.cmake)
 
+# Add boards folder to PICO_BOARD_HEADER_DIRS 
+list(APPEND PICO_BOARD_HEADER_DIRS ${BOARD_HEADER_DIR})
+
 # Define Project
-titan_firmware_init()
+titan_firmware_init(${BOARD_HEADER_DIR})
 project(tbd_bms C CXX ASM)
 
 # Define executable
@@ -37,7 +37,7 @@ pico_set_program_name(tbd_bms "BMS Firmware")
 
 # Enable the 'make upload' and 'make serial' commands for project
 # titan_use_upload_tool(tbd_bms)
-titan_enable_bootloader(tbd_bms can)
+titan_enable_bootloader(tbd_bms can ${BOARD_HEADER_DIR})
 
 # Define linking and targets
 pico_add_extra_outputs(tbd_bms)

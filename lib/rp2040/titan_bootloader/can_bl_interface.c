@@ -16,14 +16,6 @@
 // Preprocessor Defines
 // ========================================
 
-#ifndef UWRT_ROBOT_DEFINED
-#error Robot must be defined to retrieve CAN bus configuration
-#endif
-
-#ifndef UWRT_BOARD_DEFINED
-#error UWRT board must be defined to retrieve CAN bus configuration
-#endif
-
 #ifndef CAN_BUS_NAME
 #error No CAN bus defined in board file
 #endif

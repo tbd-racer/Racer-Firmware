@@ -6,8 +6,7 @@
 // This defines which CAN bus this board is connected into
 // The CAN bus is defined in the corresponding robot definition files (rate, enable FD, etc.)
 #define CAN_BUS_NAME EXTERNAL_CAN
-#define CAN_BUS_PORT_CLIENT_ID 1
-#define CAN_BUS_STBD_CLIENT_ID 2
+#define CAN_BUS_CLIENT_ID_BASE 5
 
 // Define custom client lookup for the bootloader (since we need to detect which board we're on)
 #define TITAN_BOOTLOADER_CUSTOM_CLIENT_LOOKUP "can_bl_custom_id/sbh_mcu.h"
@@ -15,12 +14,7 @@
 #define PERIPH_I2C          0
 #define PERIPH_SDA_PIN      0
 #define PERIPH_SCL_PIN      1
-#define LED_R_PIN           2
-#define LED_Y_PIN           3
-#define LED_G_PIN           4
 
-// Note that the bms i2c bus is reversed from the pin-mux
-// I2C will need to be implemented with PIO on this board
 #define BMS_SDA_PIN         7
 #define BMS_SCL_PIN         6
 #define BMS_WAKE_PIN        8
