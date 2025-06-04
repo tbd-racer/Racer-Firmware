@@ -3,11 +3,16 @@ cmake_minimum_required(VERSION 3.13)
 # Set default build type to RelWithDebugInfo
 set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "CMake Build Type")
 
-# Include sdk
+# Load common board definitions (must occur before SDK init)
+include(${REPO_DIR}/lib/rp2040/board_common/board_common.cmake)
+message("Using board directories: ${PICO_BOARD_HEADER_DIRS}")
+
+# find the SDK. THIS MUST BE DONE BEFORE PROJECT IS CALLED
 set(PICO_SDK_PATH ${REPO_DIR}/lib/rp2040/pico-sdk)
+include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Define global initialization function
-function(titan_firmware_init)
+macro(titan_firmware_init)
     # Make relwithdebuginfo actually like Release
     set(CMAKE_${LANG}_FLAGS_RELWITHDEBINFO "-O3 -DNDEBUG -g")
 
@@ -19,13 +24,7 @@ function(titan_firmware_init)
     # Enable all warnings
     add_compile_options(-Wall -Wextra)
 
-    # Load common board definitions (must occur before SDK init)
-    include(${REPO_DIR}/lib/rp2040/board_common/board_common.cmake)
-
-    message("Using board directories: ${PICO_BOARD_HEADER_DIRS}")
-
     # Setup sdk
-    include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
     set(CMAKE_C_STANDARD 11)
     set(CMAKE_CXX_STANDARD 17)
     pico_sdk_init()
@@ -35,4 +34,4 @@ function(titan_firmware_init)
 
     # Import all libraries
     add_subdirectory(${REPO_DIR}/lib/rp2040/ titan_lib)
-endfunction()
+endmacro()
