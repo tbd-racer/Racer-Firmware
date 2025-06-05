@@ -42,7 +42,7 @@ pico_set_program_name(tbd_bms "BMS Firmware")
 # Define linking and targets
 pico_add_extra_outputs(tbd_bms)
 target_link_libraries(tbd_bms PUBLIC
-	driver_async_i2c  # Async I2C Driver
+	driver_async_i2c  # Async I2C Driver for the display
 	driver_led		  # Status LED Support
 	driver_ssd1306	  # SSD1306 LCD Support
 	driver_bq40z80    # BQ40z80 BMS Support

@@ -3,6 +3,8 @@
 
 #include "blocks/rp2040_can_block.h"
 
+#define PICO_TARGET_NAME "tbd_bms"
+
 // This defines which CAN bus this board is connected into
 // The CAN bus is defined in the corresponding robot definition files (rate, enable FD, etc.)
 #define CAN_BUS_NAME EXTERNAL_CAN
