@@ -41,6 +41,23 @@ uint8_t presence_fail_count = 0;
 bq_pack_info_t bq_pack_info;
 uint can_id;
 
+static void start_ros_timers(){
+    
+}
+
+/**
+ * @brief Ticks all ROS related code
+ */
+static void tick_ros_tasks() {
+
+}
+
+static void tick_background_tasks() {
+    canbus_tick();
+
+
+}
+
 int main() {
     // Latch RP2040 power to on
     gpio_init(PWR_CTRL_PIN);
@@ -80,6 +97,57 @@ int main() {
     if (!transport_can_init(can_id)) {
         // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
         panic("Failed to initialize CAN bus hardware!");
+    }
+
+    // Enter main loop
+    // This is split into two sections of timers
+    // Those running with ROS, and those in the background
+    // Note that both types of timers will need to conform to the minimal delay time, as there is around
+    //   20ms of time worst case before the watchdog fires (as the ROS timeout is 30ms)
+    // Meaning, don't block, either poll it in the background task or send it to an interrupt
+    bool ros_initialized = false;
+    while(true) {
+        // Do background tasks
+        tick_background_tasks();
+
+        // Handle ROS state logic
+        if(is_ros_connected()) {
+            if(!ros_initialized) {
+                LOG_INFO("ROS connected");
+
+                // Lower all ROS related faults as we've got a new ROS context
+                safety_lower_fault(FAULT_ROS_ERROR);
+
+                if(ros_init(0) == RCL_RET_OK) { // TODO supply board serial number here
+                    ros_initialized = true;
+                    led_ros_connected_set(true);
+                    safety_init();
+                    start_ros_timers();
+                } else {
+                    LOG_ERROR("ROS failed to initialize.");
+                    ros_fini();
+                }
+            } else {
+                ros_spin_executor();
+                tick_ros_tasks();
+            }
+        } else if(ros_initialized){
+            LOG_INFO("Lost connection to ROS");
+            ros_fini();
+            safety_deinit();
+            led_ros_connected_set(false);
+
+            ros_initialized = false;
+        } else {
+            if (time_reached(next_connect_ping)) {
+                ros_ping();
+                next_connect_ping = make_timeout_time_ms(UROS_CONNECT_PING_TIME_MS);
+            }
+        }
+
+        // Tick safety
+        safety_tick();
+
     }
 
     return 0;

@@ -15,7 +15,7 @@
         rcl_ret_t temp_rc = fn;                                                                                        \
         if ((temp_rc != RCL_RET_OK)) {                                                                                 \
             LOG_ERROR("Failed status on in " __FILE__ ":%d : %d. Aborting.", __LINE__, (int) temp_rc);                 \
-            safety_raise_fault_with_arg(FAULT_ROS_ERROR, temp_rc);                                                     \
+            safety_raise_fault(FAULT_ROS_ERROR);                                                     \
             return temp_rc;                                                                                            \
         }                                                                                                              \
     }

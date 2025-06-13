@@ -32,7 +32,6 @@
 #define ELECTRICAL_COMMAND_SUBSCRIBER_NAME "command/electrical"
 
 bool ros_connected = false;
-bool request_powercycle = false;
 
 // Core Variables
 rcl_node_t node;
@@ -230,14 +229,4 @@ bool is_ros_connected(void) {
 bool ros_ping(void) {
     ros_connected = rmw_uros_ping_agent(RMW_UXRCE_PUBLISH_RELIABLE_TIMEOUT, 1) == RCL_RET_OK;
     return ros_connected;
-}
-
-bool power_cycle_requested(void){
-    // clear the request as we are going to service it
-    if(request_powercycle){
-        request_powercycle = false;
-        return true;
-    }
-
-    return false;
 }
