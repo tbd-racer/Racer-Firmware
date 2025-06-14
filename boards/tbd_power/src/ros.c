@@ -41,7 +41,7 @@ rcl_publisher_t heartbeat_publisher;
 int failed_heartbeats = 0;
 
 // Node specific Variables
-rcl_publisher_t firmware_status_publisher, battery_status_publisher;
+rcl_publisher_t firmware_status_publisher;
 rcl_subscription_t killswtich_subscriber;
 std_msgs__msg__Bool killswitch_msg;
 // TODO: Add node specific items here
@@ -147,12 +147,6 @@ rcl_ret_t ros_init(uint8_t board_id) {
         ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, FirmwareStatus),
         FIRMWARE_STATUS_PUBLISHER_NAME));
 
-    RCRETCHECK(rclc_publisher_init_default(
-        &battery_status_publisher,
-        &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, BatteryStatus),
-        BATTERY_STATUS_PUBLISHER_NAME));
-
     RCRETCHECK(rclc_subscription_init_best_effort(
         &killswtich_subscriber,
         &node,
@@ -177,10 +171,9 @@ void ros_spin_executor(void) {
 }
 
 void ros_fini(void) {
-    // TODO: Modify to clean up anything you have opened in init here to avoid memory leaks
     RCSOFTCHECK(rcl_subscription_fini(&killswtich_subscriber, &node));
     RCSOFTCHECK(rcl_publisher_fini(&heartbeat_publisher, &node));
-    // RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node))
+    RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node));
     RCSOFTCHECK(rclc_executor_fini(&executor));
     RCSOFTCHECK(rcl_node_fini(&node));
     RCSOFTCHECK(rclc_support_fini(&support));

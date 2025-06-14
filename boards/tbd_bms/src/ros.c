@@ -207,10 +207,10 @@ void ros_spin_executor(void) {
 }
 
 void ros_fini(void) {
-    // TODO: Modify to clean up anything you have opened in init here to avoid memory leaks
     RCSOFTCHECK(rcl_subscription_fini(&killswtich_subscriber, &node));
     RCSOFTCHECK(rcl_publisher_fini(&heartbeat_publisher, &node));
-    // RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node))
+    RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node));
+
     RCSOFTCHECK(rclc_executor_fini(&executor));
     RCSOFTCHECK(rcl_node_fini(&node));
     RCSOFTCHECK(rclc_support_fini(&support));

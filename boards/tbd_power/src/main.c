@@ -16,13 +16,7 @@
 #define UROS_CONNECT_PING_TIME_MS 1000
 #define HEARTBEAT_TIME_MS 100
 #define FIRMWARE_STATUS_TIME_MS 1000
-#define BATTERY_STATUS_TIME_MS 1000
 #define LED_UPTIME_INTERVAL_MS 250
-#define PRESENCE_CHECK_INTERVAL_MS 1000
-#define PRESENCE_TIMEOUT_COUNT 10
-#define PWRCYCL_CHECK_INTERVAL_MS 250
-#define PWR_CYCLE_DURATION_MS 10000
-#define DISPLAY_UPDATE_INTERVAL_MS 1000
 
 // Initialize all to nil time
 // For background timers, they will fire immediately
@@ -31,29 +25,72 @@ absolute_time_t next_heartbeat = {0};
 absolute_time_t next_status_update = {0};
 absolute_time_t next_led_update = {0};
 absolute_time_t next_connect_ping = {0};
-absolute_time_t next_pack_present_update = {0};
-absolute_time_t next_battery_status_update = {0};
-absolute_time_t next_pwrcycl_update = {0};
 absolute_time_t next_display_update = {0};
 
-uint8_t presence_fail_count = 0;
-uint can_id;
+/**
+ * @brief Check if a timer is ready. If so advance it to the next interval.
+ *
+ * This will also raise a fault if timers are missed
+ *
+ * @param next_fire_ptr A pointer to the absolute_time_t holding the time the timer should next fire
+ * @param interval_ms The interval the timer fires at
+ * @return true The timer has fired, any action which was waiting for this timer should occur
+ * @return false The timer has not fired
+ */
+static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bool error_on_miss) {
+    absolute_time_t time_tmp = *next_fire_ptr;
+    if (time_reached(time_tmp)) {
+        bool is_first_fire = is_nil_time(time_tmp);
+        time_tmp = delayed_by_ms(time_tmp, interval_ms);
+        if (time_reached(time_tmp)) {
+            unsigned int i = 0;
+            while (time_reached(time_tmp)) {
+                time_tmp = delayed_by_ms(time_tmp, interval_ms);
+                i++;
+            }
+            if (!is_first_fire) {
+                LOG_WARN("Missed %u runs of %s timer 0x%p", i, (error_on_miss ? "critical" : "non-critical"),
+                         next_fire_ptr);
+                if (error_on_miss)
+                    safety_raise_fault(FAULT_TIMER_MISSED);
+            }
+        }
+        *next_fire_ptr = time_tmp;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 static void start_ros_timers(){
-    
+    next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
+    next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
 }
 
 /**
  * @brief Ticks all ROS related code
  */
 static void tick_ros_tasks() {
+    if (timer_ready(&next_heartbeat, HEARTBEAT_TIME_MS, true)) {
+        // RCSOFTRETVCHECK is used as important logs should occur within ros.c,
+        RCSOFTRETVCHECK(ros_heartbeat_pulse(CAN_BUS_CLIENT_ID));
+    }
+
+    // send the firmware status updates
+    if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
+        RCSOFTRETVCHECK(ros_update_firmware_status(CAN_BUS_CLIENT_ID));
+    }
 
 }
 
 static void tick_background_tasks() {
     canbus_tick();
 
-
+    if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+        // update the RGB led
+        led_network_online_set(canbus_check_online());
+    }
 }
 
 int main() {
@@ -71,8 +108,7 @@ int main() {
     sleep_ms(1000);
     safety_tick();
 
-    can_id = 0; // TODO update this from flash
-    if (!transport_can_init(can_id)) {
+    if (!transport_can_init(CAN_BUS_CLIENT_ID)) {
         // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
         panic("Failed to initialize CAN bus hardware!");
     }
