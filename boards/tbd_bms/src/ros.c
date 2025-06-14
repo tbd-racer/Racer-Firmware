@@ -57,6 +57,24 @@ static void killswitch_subscription_callback(const void * msgin)
     safety_kill_switch_update(ROS_KILL_SWITCH, msg->data, true);
 }
 
+rcl_ret_t ros_heartbeat_pulse(uint8_t client_id) {
+    std_msgs__msg__Int8 heartbeat_msg;
+    heartbeat_msg.data = client_id;
+    rcl_ret_t ret = rcl_publish(&heartbeat_publisher, &heartbeat_msg, NULL);
+    if (ret != RCL_RET_OK) {
+        failed_heartbeats++;
+
+        if(failed_heartbeats > MAX_MISSSED_HEARTBEATS) {
+            ros_connected = false;
+        }
+    } else {
+        failed_heartbeats = 0;
+    }
+
+    RCSOFTRETCHECK(ret);
+
+    return RCL_RET_OK;
+}
 
 // ========================================
 // Public Task Methods (called in main tick)
@@ -102,26 +120,7 @@ rcl_ret_t ros_update_firmware_status(uint8_t client_id) {
     return RCL_RET_OK;
 }
 
-rcl_ret_t ros_heartbeat_pulse(uint8_t client_id) {
-    std_msgs__msg__Int8 heartbeat_msg;
-    heartbeat_msg.data = client_id;
-    rcl_ret_t ret = rcl_publish(&heartbeat_publisher, &heartbeat_msg, NULL);
-    if (ret != RCL_RET_OK) {
-        failed_heartbeats++;
-
-        if(failed_heartbeats > MAX_MISSSED_HEARTBEATS) {
-            ros_connected = false;
-        }
-    } else {
-        failed_heartbeats = 0;
-    }
-
-    RCSOFTRETCHECK(ret);
-
-    return RCL_RET_OK;
-}
-
-rcl_ret_t ros_update_battery_status(bq_pack_info_t bq_pack_info){
+rcl_ret_t ros_update_battery_status(bq_pack_info_t bq_pack_info, uint8_t client_id){
     chassis_msgs__msg__BatteryStatus status;
 
     // push in the common cell info
@@ -132,11 +131,8 @@ rcl_ret_t ros_update_battery_status(bq_pack_info_t bq_pack_info){
     // test for port and stbd
     status.detect = chassis_msgs__msg__BatteryStatus__DETECT_NONE;
     if(bq_pack_present()){
-        if (bq_pack_side_det_port()) {
-            status.detect = chassis_msgs__msg__BatteryStatus__DETECT_SLOT1;
-        } else {
-            status.detect = chassis_msgs__msg__BatteryStatus__DETECT_SLOT2;
-        }
+        // For now we report as the client ID
+        status.detect = client_id;
     }
 
     // read cell info
@@ -200,7 +196,7 @@ rcl_ret_t ros_init(uint8_t board_id) {
 
     // Note: Code in executor callbacks should be kept to a minimum
     // It should set whatever flags are necessary and get out
-    // And it should *NOT* try to perform any communiations over ROS, as this can lead to watchdog timeouts
+    // And it should *NOT* try to perform any communications over ROS, as this can lead to watchdog timeouts
     // in the event that specific request times out
 
     return RCL_RET_OK;

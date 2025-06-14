@@ -74,9 +74,6 @@ uint16_t bq_time_to_empty();
 // get the manufacturing info from the pack
 struct bq_pack_info_t bq_pack_mfg_info();
 
-// Check if the side detect pin reports port (pack present must be true for this to be valid)
-bool bq_pack_side_det_port();
-
 // used for sending the MAC commands from the mac command enum
 void bq_send_mac_command(const uint16_t command);
 

@@ -125,16 +125,6 @@ uint8_t bq_pack_present(){
     return (uint8_t)(data[1] & 0b00000001);
 }
 
-bool bq_pack_side_det_port(){
-    // read the GPIO register (16 bits)
-    uint8_t data[2] = {0, 0};
-    uint8_t reg_addr[1] = {BQ_READ_GPIO};
-    bq_handle_i2c_transfer(reg_addr, data, 2);
-
-    // Only byte 0 contains GPIO data - Read RH1 (bit 3)
-    return (data[0] & 0b00001000) != 0;
-}
-
 uint8_t bq_pack_discharging(){
     // read the operationstatus register (32 bits)
     uint8_t data[5] = {0, 0, 0, 0, 0};

@@ -8,6 +8,7 @@
 #include "titan/logger.h"
 #include "titan/version.h"
 
+#include "display.h"
 #include "ros.h"
 #include "safety_interface.h"
 
@@ -21,8 +22,6 @@
 #define LED_UPTIME_INTERVAL_MS 250
 #define PRESENCE_CHECK_INTERVAL_MS 1000
 #define PRESENCE_TIMEOUT_COUNT 10
-#define PWRCYCL_CHECK_INTERVAL_MS 250
-#define PWR_CYCLE_DURATION_MS 10000
 #define DISPLAY_UPDATE_INTERVAL_MS 1000
 
 // Initialize all to nil time
@@ -32,30 +31,99 @@ absolute_time_t next_heartbeat = {0};
 absolute_time_t next_status_update = {0};
 absolute_time_t next_led_update = {0};
 absolute_time_t next_connect_ping = {0};
-absolute_time_t next_pack_present_update = {0};
 absolute_time_t next_battery_status_update = {0};
-absolute_time_t next_pwrcycl_update = {0};
+absolute_time_t next_shutdown_update = {0};
 absolute_time_t next_display_update = {0};
 
 uint8_t presence_fail_count = 0;
 bq_pack_info_t bq_pack_info;
 uint can_id;
 
+/**
+ * @brief Check if a timer is ready. If so advance it to the next interval.
+ *
+ * This will also raise a fault if timers are missed
+ *
+ * @param next_fire_ptr A pointer to the absolute_time_t holding the time the timer should next fire
+ * @param interval_ms The interval the timer fires at
+ * @return true The timer has fired, any action which was waiting for this timer should occur
+ * @return false The timer has not fired
+ */
+static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bool error_on_miss) {
+    absolute_time_t time_tmp = *next_fire_ptr;
+    if (time_reached(time_tmp)) {
+        bool is_first_fire = is_nil_time(time_tmp);
+        time_tmp = delayed_by_ms(time_tmp, interval_ms);
+        if (time_reached(time_tmp)) {
+            unsigned int i = 0;
+            while (time_reached(time_tmp)) {
+                time_tmp = delayed_by_ms(time_tmp, interval_ms);
+                i++;
+            }
+            if (!is_first_fire) {
+                LOG_WARN("Missed %u runs of %s timer 0x%p", i, (error_on_miss ? "critical" : "non-critical"),
+                         next_fire_ptr);
+                if (error_on_miss)
+                    safety_raise_fault(FAULT_TIMER_MISSED);
+            }
+        }
+        *next_fire_ptr = time_tmp;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 static void start_ros_timers(){
-    
+    next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
+    next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
+    next_battery_status_update = make_timeout_time_ms(BATTERY_STATUS_TIME_MS);
 }
 
 /**
  * @brief Ticks all ROS related code
  */
 static void tick_ros_tasks() {
+    if (timer_ready(&next_heartbeat, HEARTBEAT_TIME_MS, true)) {
+        // RCSOFTRETVCHECK is used as important logs should occur within ros.c,
+        RCSOFTRETVCHECK(ros_heartbeat_pulse(can_id));
+    }
 
+    // send the firmware status updates
+    if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
+        RCSOFTRETVCHECK(ros_update_firmware_status(can_id));
+    }
+
+    // send the battery status updates
+    if (timer_ready(&next_battery_status_update, BATTERY_STATUS_TIME_MS, true)) {
+        RCSOFTRETVCHECK(ros_update_battery_status(bq_pack_info, can_id));
+    }
 }
 
 static void tick_background_tasks() {
     canbus_tick();
 
+    if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+        // update the RGB led
+        led_network_online_set(canbus_check_online());
+    }
 
+    // Determine if we need a shutdown
+    if (timer_ready(&next_shutdown_update, PRESENCE_CHECK_INTERVAL_MS, false)) {
+        // check if we need to update the presence counter
+        if(!(canbus_check_online() || bq_pack_present())){
+            presence_fail_count ++;
+        } else {
+            presence_fail_count = 0;
+        }
+
+        // if the presence counter times out, shut down
+        if(presence_fail_count > PRESENCE_TIMEOUT_COUNT){
+            LOG_WARN("Pack not detected after %ds. Powering down!", PRESENCE_TIMEOUT_COUNT);
+            gpio_put(PWR_CTRL_PIN, 0);
+        }
+    }
 }
 
 int main() {
@@ -77,6 +145,7 @@ int main() {
     led_init();
     micro_ros_init_error_handling();
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
+    display_init();
 
     sleep_ms(1000);
     safety_tick();
@@ -123,6 +192,7 @@ int main() {
                     led_ros_connected_set(true);
                     safety_init();
                     start_ros_timers();
+                    display_show_ros_connect();
                 } else {
                     LOG_ERROR("ROS failed to initialize.");
                     ros_fini();
@@ -136,6 +206,7 @@ int main() {
             ros_fini();
             safety_deinit();
             led_ros_connected_set(false);
+            display_show_ros_disconnect();
 
             ros_initialized = false;
         } else {
