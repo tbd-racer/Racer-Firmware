@@ -52,3 +52,6 @@ target_link_libraries(tbd_bms PUBLIC
 	hardware_i2c
 	pico_stdlib		  # Pico SDK Standard Library
 )
+
+SET(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -Wl,-t")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -Wl,-t,--trace-symbol=__wrap_uxr_run_session_until_confirm_delivery")

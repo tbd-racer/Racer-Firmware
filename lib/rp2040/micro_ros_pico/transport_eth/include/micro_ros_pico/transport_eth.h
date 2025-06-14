@@ -6,14 +6,12 @@
 #define ETH_HEARTBEAT_INTERVAL_MS 500
 #endif
 
-#include "micro_ros_pico/common.h"
-
-#include <stdbool.h>
 #include <stdint.h>
+#include "micro_ros_pico/common.h"
 
 bool transport_eth_init();
 
 bool ethernet_check_online();
 void ethernet_tick();
 
-#endif  // MICRO_ROS_PICO__TRANSPORT_ETH_H
+#endif //MICRO_ROS_PICO__TRANSPORT_ETH_H

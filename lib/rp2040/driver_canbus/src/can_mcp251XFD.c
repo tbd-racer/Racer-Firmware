@@ -80,7 +80,7 @@ uint32_t saved_client_id;
 static bool gpio_is_irq_enabled(unsigned int gpio, unsigned int event) {
     // Separate mask/force/status per-core, so check which core called, and
     // set the relevant IRQ controls.
-    io_bank0_irq_ctrl_hw_t *irq_ctrl_base = get_core_num() ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
+    io_irq_ctrl_hw_t *irq_ctrl_base = get_core_num() ? &iobank0_hw->proc1_irq_ctrl : &iobank0_hw->proc0_irq_ctrl;
     io_rw_32 *en_reg = &irq_ctrl_base->inte[gpio / 8];
     event <<= 4 * (gpio % 8);
 
