@@ -124,6 +124,14 @@ static void tick_background_tasks() {
             gpio_put(PWR_CTRL_PIN, 0);
         }
     }
+
+    // Update LCD if reed switch held and we are in time for a display update
+    if (gpio_get(SWITCH_SIGNAL_PIN) && time_reached(next_display_update)) {
+        next_display_update = make_timeout_time_ms(DISPLAY_UPDATE_INTERVAL_MS);
+
+        // Show pack info
+        display_show_stats(bq_pack_info.serial, bq_pack_soc(), bq_pack_voltage() / 1000.0);
+    }
 }
 
 int main() {
