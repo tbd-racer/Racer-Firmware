@@ -6,8 +6,9 @@
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
-#include <riptide_msgs2/msg/firmware_status.h>
-#include <riptide_msgs2/msg/battery_status.h>
+
+#include <chassis_msgs/msg/firmware_status.h>
+#include <chassis_msgs/msg/battery_status.h>
 #include <std_msgs/msg/int8.h>
 #include <std_msgs/msg/bool.h>
 
@@ -62,7 +63,7 @@ static void killswitch_subscription_callback(const void * msgin)
 // ========================================
 
 rcl_ret_t ros_update_firmware_status(uint8_t client_id) {
-    riptide_msgs2__msg__FirmwareStatus status_msg;
+    chassis_msgs__msg__FirmwareStatus status_msg;
     status_msg.board_name.data = PICO_BOARD;
     status_msg.board_name.size = strlen(PICO_BOARD);
     status_msg.board_name.capacity = status_msg.board_name.size + 1; // includes NULL byte
@@ -121,7 +122,7 @@ rcl_ret_t ros_heartbeat_pulse(uint8_t client_id) {
 }
 
 rcl_ret_t ros_update_battery_status(bq_pack_info_t bq_pack_info){
-    riptide_msgs2__msg__BatteryStatus status;
+    chassis_msgs__msg__BatteryStatus status;
 
     // push in the common cell info
     status.cell_name.data = bq_pack_info.name;
@@ -129,12 +130,12 @@ rcl_ret_t ros_update_battery_status(bq_pack_info_t bq_pack_info){
     status.serial = bq_pack_info.serial;
 
     // test for port and stbd
-    status.detect = riptide_msgs2__msg__BatteryStatus__DETECT_NONE;
+    status.detect = chassis_msgs__msg__BatteryStatus__DETECT_NONE;
     if(bq_pack_present()){
         if (bq_pack_side_det_port()) {
-            status.detect = riptide_msgs2__msg__BatteryStatus__DETECT_PORT;
+            status.detect = chassis_msgs__msg__BatteryStatus__DETECT_SLOT1;
         } else {
-            status.detect = riptide_msgs2__msg__BatteryStatus__DETECT_STBD;
+            status.detect = chassis_msgs__msg__BatteryStatus__DETECT_SLOT2;
         }
     }
 
@@ -177,13 +178,13 @@ rcl_ret_t ros_init(uint8_t board_id) {
     RCRETCHECK(rclc_publisher_init_default(
         &firmware_status_publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(riptide_msgs2, msg, FirmwareStatus),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, FirmwareStatus),
         FIRMWARE_STATUS_PUBLISHER_NAME));
 
     RCRETCHECK(rclc_publisher_init_default(
         &battery_status_publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(riptide_msgs2, msg, BatteryStatus),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, BatteryStatus),
         BATTERY_STATUS_PUBLISHER_NAME));
 
     RCRETCHECK(rclc_subscription_init_best_effort(

@@ -6,8 +6,8 @@
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
-#include <riptide_msgs2/msg/firmware_status.h>
-#include <riptide_msgs2/msg/battery_status.h>
+#include <chassis_msgs/msg/firmware_status.h>
+#include <chassis_msgs/msg/battery_status.h>
 #include <std_msgs/msg/int8.h>
 #include <std_msgs/msg/bool.h>
 
@@ -62,7 +62,7 @@ static void killswitch_subscription_callback(const void * msgin)
 // ========================================
 
 rcl_ret_t ros_update_firmware_status(uint8_t client_id) {
-    riptide_msgs2__msg__FirmwareStatus status_msg;
+    chassis_msgs__msg__FirmwareStatus status_msg;
     status_msg.board_name.data = PICO_BOARD;
     status_msg.board_name.size = strlen(PICO_BOARD);
     status_msg.board_name.capacity = status_msg.board_name.size + 1; // includes NULL byte
@@ -144,13 +144,13 @@ rcl_ret_t ros_init(uint8_t board_id) {
     RCRETCHECK(rclc_publisher_init_default(
         &firmware_status_publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(riptide_msgs2, msg, FirmwareStatus),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, FirmwareStatus),
         FIRMWARE_STATUS_PUBLISHER_NAME));
 
     RCRETCHECK(rclc_publisher_init_default(
         &battery_status_publisher,
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(riptide_msgs2, msg, BatteryStatus),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, BatteryStatus),
         BATTERY_STATUS_PUBLISHER_NAME));
 
     RCRETCHECK(rclc_subscription_init_best_effort(
