@@ -14,15 +14,15 @@
 #define TITAN_BOOTLOADER_CUSTOM_CLIENT_LOOKUP "can_bl_custom_id/sbh_mcu.h"
 
 #define PERIPH_I2C          0
-#define PERIPH_SDA_PIN      0
-#define PERIPH_SCL_PIN      1
+#define PERIPH_SDA_PIN      4
+#define PERIPH_SCL_PIN      5
 
 #define BQ40Z80_I2C_PORT    1
-#define BMS_SDA_PIN         7
-#define BMS_SCL_PIN         6
-#define BMS_WAKE_PIN        8
-#define PWR_CTRL_PIN        9
-#define SWITCH_SIGNAL_PIN   10
+#define BMS_SDA_PIN         10
+#define BMS_SCL_PIN         11
+#define BMS_WAKE_PIN        12
+#define PWR_CTRL_PIN        1
+#define SWITCH_SIGNAL_PIN   0
 
 #ifndef PICO_DEFAULT_I2C
 #define PICO_DEFAULT_I2C PERIPH_I2C
