@@ -53,7 +53,7 @@ static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bo
 static void tick_background_tasks() {
     if(timer_ready(&next_event, EVENT_TIME, false)){
         toggle = !toggle;
-        led_fault_set(toggle);
+        led_network_online_set(toggle);
 
         // do something
         led_update_pins();
