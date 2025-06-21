@@ -1,3 +1,4 @@
+add_subdirectory(driver_ads7828/)
 add_subdirectory(driver_async_i2c/)
 add_subdirectory(driver_bq40z80/)
 add_subdirectory(driver_canbus/)
