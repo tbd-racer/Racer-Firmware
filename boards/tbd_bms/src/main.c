@@ -130,7 +130,7 @@ static void tick_background_tasks() {
         next_display_update = make_timeout_time_ms(DISPLAY_UPDATE_INTERVAL_MS);
 
         // Show pack info
-        display_show_stats(bq_pack_info.serial, bq_pack_soc(), bq_pack_voltage() / 1000.0);
+        // display_show_stats(bq_pack_info.serial, bq_pack_soc(), bq_pack_voltage() / 1000.0);
     }
 }
 
@@ -153,7 +153,7 @@ int main() {
     led_init();
     micro_ros_init_error_handling();
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
-    display_init();
+    // display_init();
 
     sleep_ms(1000);
     safety_tick();
@@ -200,7 +200,7 @@ int main() {
                     led_ros_connected_set(true);
                     safety_init();
                     start_ros_timers();
-                    display_show_ros_connect();
+                    // display_show_ros_connect();
                 } else {
                     LOG_ERROR("ROS failed to initialize.");
                     ros_fini();
@@ -214,7 +214,7 @@ int main() {
             ros_fini();
             safety_deinit();
             led_ros_connected_set(false);
-            display_show_ros_disconnect();
+            // display_show_ros_disconnect();
 
             ros_initialized = false;
         } else {
