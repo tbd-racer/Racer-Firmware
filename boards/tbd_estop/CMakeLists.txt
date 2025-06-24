@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.13)
+
+# set this to allow the firmware init function to find the board dir
+set(BOARD_HEADER_DIR ${CMAKE_SOURCE_DIR}/board)
+
+# Add boards folder to PICO_BOARD_HEADER_DIRS 
+list(APPEND PICO_BOARD_HEADER_DIRS ${BOARD_HEADER_DIR})
+
+# The Target Board
+# This also impacts the upload_tool for automatic device selection
+set(PICO_BOARD estop)
+
+# Include global definitions
+execute_process(COMMAND git rev-parse --show-cdup
+	WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+	OUTPUT_VARIABLE relative_path_to_repository_root OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
+get_filename_component(REPO_DIR "${CMAKE_CURRENT_LIST_DIR}/${relative_path_to_repository_root}" ABSOLUTE)
+include(${REPO_DIR}/global_defs.cmake)
+
+# Define Project
+project(estop C CXX ASM)
+titan_firmware_init()
+
+# Define executable
+file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
+add_executable(estop
+	${SOURCES}
+)
+target_include_directories(estop PUBLIC include)
+
+# Set version: major minor (see titan/version.h for more info)
+titan_generate_version_tag(estop 1 0)
+
+# Configure pico-sdk
+pico_enable_stdio_usb(estop 1)
+pico_enable_stdio_uart(estop 0)
+pico_set_program_name(estop "Power Board Firmware")
+
+# Enable the 'make upload' and 'make serial' commands for project
+# titan_use_upload_tool(estop)
+# titan_enable_bootloader(estop can ${BOARD_HEADER_DIR})
+
+
+# Define linking and targets
+pico_add_extra_outputs(estop)
+target_link_libraries(estop PUBLIC
+	pico_stdlib		  # Pico SDK Standard Library
+	pico_stdio_usb
+	pico_rand
+	hardware_spi
+	rfm95
+)
+
+target_compile_features(estop PUBLIC cxx_std_23)

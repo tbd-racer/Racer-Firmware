@@ -33,5 +33,5 @@ macro(titan_firmware_init)
     # include(${REPO_DIR}/tools/upload_tool/enable_upload_command.cmake)
 
     # Import all libraries
-    add_subdirectory(${REPO_DIR}/lib/rp2040/ titan_lib)
+    add_subdirectory(${REPO_DIR}/lib/rp2040/ titan_lib) 
 endmacro()

@@ -18,7 +18,8 @@ pico_sdk_init()
 add_executable(hello hello.c)
 
 # pull in common dependencies
-target_link_libraries(hello pico_stdlib)
+target_link_libraries(hello pico_stdlib
+					        radio_head)
 
 if (PICO_CYW43_SUPPORTED)
     target_link_libraries(hello pico_cyw43_arch_none)
