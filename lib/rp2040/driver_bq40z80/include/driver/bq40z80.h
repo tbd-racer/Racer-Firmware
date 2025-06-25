@@ -5,7 +5,6 @@
 #include "pico/stdlib.h"
 
 #define BQ_ADDR 0x0B
-#define PIO_SM 0
 
 #define WARN_SOC_THRESH 60
 #define STOP_SOC_THRESH 30
