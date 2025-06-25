@@ -16,6 +16,7 @@
 #define UROS_CONNECT_PING_TIME_MS 1000
 #define HEARTBEAT_TIME_MS 100
 #define FIRMWARE_STATUS_TIME_MS 1000
+#define KILLSWITCH_TIME_MS 100
 #define LED_UPTIME_INTERVAL_MS 250
 
 // Initialize all to nil time
@@ -23,6 +24,7 @@
 // For ros timers, they will be reset before being ticked by start_ros_timers
 absolute_time_t next_heartbeat = {0};
 absolute_time_t next_status_update = {0};
+absolute_time_t next_kill_update = {0};
 absolute_time_t next_led_update = {0};
 absolute_time_t next_connect_ping = {0};
 absolute_time_t next_display_update = {0};
@@ -66,6 +68,7 @@ static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bo
 static void start_ros_timers(){
     next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
     next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
+    next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
 }
 
 /**
@@ -80,6 +83,11 @@ static void tick_ros_tasks() {
     // send the firmware status updates
     if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
         RCSOFTRETVCHECK(ros_update_firmware_status(CAN_BUS_CLIENT_ID));
+    }
+
+    // Send killswitch updates
+    if(timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)){
+        RCSOFTRETVCHECK(ros_update_killswitches());
     }
 
 }

@@ -11,7 +11,7 @@
 #define FAULT_CAN_RECV_ERROR      3
 #define FAULT_ROS_ERROR           4
 #define FAULT_TIMER_MISSED        5
-#define FAULT_BQ40_ERROR          6
+#define FAULT_RFM95_ERROR         6
 
 static const char * const fault_string_list[] = {
     "FAULT_WATCHDOG_RESET",
@@ -20,13 +20,31 @@ static const char * const fault_string_list[] = {
     "FAULT_CAN_RECV_ERROR",
     "FAULT_ROS_ERROR",
     "FAULT_TIMER_MISSED",
-    "FAULT_BQ40_ERROR"
+    "FAULT_RFM95_ERROR"
 };
 
+const char * safety_lookup_killswitch_id(uint32_t switch_id);
 
+// Map for killswitch names
+static const char * const killswitch_id_list[] = {
+    "ONBOARD_0",
+    "RADIO_REMOTE_0",
+    "RADIO_REMOTE_1",
+    "RADIO_REMOTE_2",
+    "RADIO_REMOTE_3",
+    "RADIO_REMOTE_4",
+};
+
+// TODO: Replace these with the kill switches for the implementation
 // If no kill switches defined, set NUM_KILL_SWITCHES = 0
 enum kill_switch {
-    ROS_KILL_SWITCH = 0,
+    KILL_SWITCH_PHYSICAL = 0,
+    KILL_SWITCH_RADIO_0,
+    KILL_SWITCH_RADIO_1,
+    KILL_SWITCH_RADIO_2,
+    KILL_SWITCH_RADIO_3,
+    KILL_SWITCH_RADIO_4,
+
     // Used to automatically calculate number of kill switches
     // This must be the last enum
     NUM_KILL_SWITCHES
