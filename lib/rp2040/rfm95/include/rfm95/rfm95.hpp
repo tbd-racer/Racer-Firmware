@@ -53,6 +53,12 @@ public:
   std::expected<void, RFM95Error> write_coding_rate(CodingRate cr);
 
 private:
+  /// @brief Initializes the FIFO buffer for transmission filling.
+  /// @param data The data to fill into the FIFO.
+  /// @return std::expected containing the number of bytes written or an error.
+  std::expected<size_t, RFM95Error>
+  fill_tx_fifo(const std::span<const uint8_t> data) const;
+
   SPICpp spi_;
 };
 

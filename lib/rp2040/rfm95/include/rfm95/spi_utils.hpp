@@ -32,13 +32,13 @@ public:
   ~set_chip_select() { cs_deselect(); }
 
 private:
-  inline void cs_select() {
+  inline void cs_select() const {
     asm volatile("nop \n nop \n nop");
     gpio_put(cs_pin_, false);
     asm volatile("nop \n nop \n nop");
   }
 
-  inline void cs_deselect() {
+  inline void cs_deselect() const {
     asm volatile("nop \n nop \n nop");
     gpio_put(cs_pin_, true);
     asm volatile("nop \n nop \n nop");
@@ -55,7 +55,7 @@ public:
   /// complete.
   /// @param data The data to write.
   /// @return The number of bytes written.
-  inline size_t write_blocking(std::span<uint8_t> data) {
+  inline size_t write_blocking(const std::span<const uint8_t> data) const {
     return spi_write_blocking(spi_, data.data(), data.size());
   }
 
@@ -63,13 +63,13 @@ public:
   /// complete
   /// @param value the byte to write
   /// @return The number of bytes written.
-  inline size_t write_blocking(uint8_t value) {
+  inline size_t write_blocking(uint8_t value) const {
     printf("Writing byte: 0b%08b\n", value);
     return spi_write_blocking(spi_, &value, 1);
   }
 
   inline std::expected<void, SPIErrorCode>
-  write_blocking_strict(uint8_t value) {
+  write_blocking_strict(uint8_t value) const {
     if (write_blocking(value) < 1) {
       return std::unexpected(SPIErrorCode::WriteFailed);
     }
@@ -77,14 +77,14 @@ public:
   }
 
   inline std::expected<void, SPIErrorCode>
-  write_blocking_strict(std::span<uint8_t> data) {
+  write_blocking_strict(const std::span<const uint8_t> data) const {
     if (write_blocking(data) < data.size()) {
       return std::unexpected(SPIErrorCode::WriteFailed);
     }
     return {};
   }
 
-  inline std::expected<uint8_t, SPIErrorCode> read_byte_strict() {
+  inline std::expected<uint8_t, SPIErrorCode> read_byte_strict() const {
     uint8_t byte = 0;
     if (spi_read_blocking(spi_, 0, &byte, 1) < 1) {
       return std::unexpected(SPIErrorCode::ReadFailed);
@@ -93,7 +93,7 @@ public:
   }
 
   inline std::expected<void, SPIErrorCode> write_register(register_t reg,
-                                                          uint8_t value) {
+                                                          uint8_t value) const {
     uint8_t data[2] = {add_write_bit(reg), value};
 
     set_chip_select cs{cs_pin_};
@@ -115,7 +115,7 @@ public:
   ///         the register byte). On failure, returns an SPIErrorCode.
   ///
   inline std::expected<size_t, SPIErrorCode>
-  write_register(register_t reg, std::span<uint8_t> data) {
+  write_register(register_t reg, const std::span<const uint8_t> data) const {
     if (data.empty()) {
       return 0;
     }
@@ -129,7 +129,8 @@ public:
         });
   }
 
-  inline std::expected<uint8_t, SPIErrorCode> read_register(register_t reg) {
+  inline std::expected<uint8_t, SPIErrorCode>
+  read_register(register_t reg) const {
     set_chip_select cs{cs_pin_};
 
     return write_blocking_strict(add_read_bit(reg)).and_then([&]() {
@@ -138,7 +139,8 @@ public:
   }
 
   inline std::expected<void, SPIErrorCode>
-  update_register(register_t reg, std::function<uint8_t(uint8_t)> functor) {
+  update_register(register_t reg,
+                  std::function<uint8_t(uint8_t)> functor) const {
     // read the regitster
     // update the value using the functor
     // write the register back

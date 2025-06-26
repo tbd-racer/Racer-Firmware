@@ -59,4 +59,18 @@ std::expected<void, RFM95Error> RFM95::write_coding_rate(CodingRate cr) {
       });
 }
 
+std::expected<size_t, RFM95Error>
+RFM95::fill_tx_fifo(const std::span<const uint8_t> data) const {
+  // 1.1 Set FifoPtrAddr to FifoTxPtrBase
+  // 1.2 Read FifoTxBaseAddr register
+  // 1.2 Write FifoPtrAddr register with the value from FifoTxBaseAddr
+  return spi_.read_register(rfm95::RegFifoTxBaseAddr)
+      .and_then([&](uint8_t fifo_base_addr) {
+        return spi_.write_register(rfm95::RegFifoAddrPtr, fifo_base_addr);
+      })
+      .and_then([&]() { return spi_.write_register(rfm95::RegFifo, data); })
+      .transform_error(
+          [](SPIErrorCode) { return RFM95Error("Failed to fill TX FIFO"); });
+}
+
 } // namespace rfm95
