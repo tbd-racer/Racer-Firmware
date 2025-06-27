@@ -49,6 +49,14 @@ void safety_interface_init(void) {
 
 void safety_interface_tick(void) {
     // TODO read the KS states in here
+    // Read the onboard killswitch
+    safety_kill_switch_update(0, false, true);
+
+    // Update the offboard kill switches
+    // Offboard starts at 1
+    for(int i = 1; i < NUM_KILL_SWITCHES; i++){
+        safety_kill_switch_update(0, false, false);
+    }
 }
 
 void safety_interface_deinit(void) {

@@ -1,6 +1,7 @@
 #include "pico/stdlib.h"
 
 #include "driver/async_i2c.h"
+#include "driver/ads7828.h"
 #include "driver/canbus.h"
 #include "driver/led.h"
 #include "micro_ros_pico/transport_can.h"
@@ -112,6 +113,29 @@ int main() {
     led_init();
     micro_ros_init_error_handling();
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
+    ads7828_init();
+
+    gpio_init(PACK1_ACTIVE_PIN);
+    gpio_set_dir(PACK1_ACTIVE_PIN, GPIO_IN);
+
+    gpio_init(PACK2_ACTIVE_PIN);
+    gpio_set_dir(PACK2_ACTIVE_PIN, GPIO_IN);
+
+    gpio_init(AGX_PWR_CTL_PIN);
+    gpio_set_dir(AGX_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(AGX_PWR_CTL_PIN, 1);
+
+    gpio_init(LIDR_PWR_CTL_PIN);
+    gpio_set_dir(LIDR_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(LIDR_PWR_CTL_PIN, 1);
+
+    gpio_init(NET_PWR_CTL_PIN);
+    gpio_set_dir(NET_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(NET_PWR_CTL_PIN, 1);
+
+    gpio_init(NANO_PWR_CTL_PIN);
+    gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(NANO_PWR_CTL_PIN, 1);
 
     sleep_ms(1000);
     safety_tick();
