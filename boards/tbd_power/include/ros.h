@@ -93,4 +93,8 @@ rcl_ret_t ros_update_firmware_status(uint8_t client_id);
 
 rcl_ret_t ros_update_killswitches(void);
 
+void channel_restart_callback(const void * request_msg, void * response_msg);
+
+static uint8_t channel_restart = 255; // 255 means no channel restart requested
+
 #endif

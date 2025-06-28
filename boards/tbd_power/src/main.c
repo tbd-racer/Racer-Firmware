@@ -8,8 +8,10 @@
 #include "titan/logger.h"
 #include "titan/version.h"
 
+
 #include "ros.h"
 #include "safety_interface.h"
+#include <chassis_msgs/srv/restart_power_channel.h>
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -19,6 +21,9 @@
 #define FIRMWARE_STATUS_TIME_MS 1000
 #define KILLSWITCH_TIME_MS 100
 #define LED_UPTIME_INTERVAL_MS 250
+#define CHANNEL_RESTART_TIME_MS 1000
+
+bool power_channel_restart_active = false; // Flag to indicate if a channel restart is currently active
 
 // Initialize all to nil time
 // For background timers, they will fire immediately
@@ -29,6 +34,7 @@ absolute_time_t next_kill_update = {0};
 absolute_time_t next_led_update = {0};
 absolute_time_t next_connect_ping = {0};
 absolute_time_t next_display_update = {0};
+absolute_time_t next_channel_restart = {0};
 
 /**
  * @brief Check if a timer is ready. If so advance it to the next interval.
@@ -72,6 +78,17 @@ static void start_ros_timers(){
     next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
 }
 
+int mapROSPinToGPIOPin(int pin) {
+    // Map ROS pin numbers to GPIO pin numbers
+    switch(pin) {
+        case chassis_msgs__srv__RestartPowerChannel_Request__LIDAR_CHANNEL: return LIDR_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__JETSON_CHANNEL: return AGX_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__AUX_CHANNEL: return NANO_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__NETWORK_CHANNEL: return NET_PWR_CTL_PIN;
+        default: return 255; // Invalid pin, return an invalid GPIO pin
+    }
+}
+
 /**
  * @brief Ticks all ROS related code
  */
@@ -99,6 +116,21 @@ static void tick_background_tasks() {
     if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
         // update the RGB led
         led_network_online_set(canbus_check_online());
+    }
+
+    // 255 means no channel restart requested
+    if(channel_restart != 255){
+        if(!power_channel_restart_active) {
+            next_channel_restart = make_timeout_time_ms(CHANNEL_RESTART_TIME_MS);
+            power_channel_restart_active = true;
+            gpio_put(mapROSPinToGPIOPin(channel_restart), 0); // Set the channel GPIO low
+        }
+
+        // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
+        if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
+            gpio_put(mapROSPinToGPIOPin(channel_restart), 1); // Set the channel GPIO high
+            channel_restart = 255; // Reset the channel restart request
+        }
     }
 }
 
