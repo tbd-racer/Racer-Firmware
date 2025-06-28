@@ -9,6 +9,7 @@
 
 #include <chassis_msgs/msg/firmware_status.h>
 #include <chassis_msgs/msg/killswitch_report.h>
+#include <chassis_msgs/srv/restart_power_channel.h>
 #include <std_msgs/msg/int8.h>
 
 #include "titan/version.h"
@@ -27,6 +28,7 @@
 #define HEARTBEAT_PUBLISHER_NAME "state/fw_heartbeat"
 #define FIRMWARE_STATUS_PUBLISHER_NAME "state/firmware"
 #define KILLSWITCH_STATUS_PUBLISHER_NAME "state/kill"
+#define CHANNEL_RESTART_SERVICE_NAME ""
 
 bool ros_connected = false;
 
@@ -41,12 +43,37 @@ int failed_heartbeats = 0;
 // Node specific Variables
 rcl_publisher_t firmware_status_publisher;
 rcl_publisher_t killswitch_publisher;
-// TODO: Add node specific items here
+rcl_service_t channel_restart_service;
+chassis_msgs__srv__RestartPowerChannel_Request channel_restart_request_msg;
+chassis_msgs__srv__RestartPowerChannel_Response channel_restart_response_msg;
+// TODO: Add node specific items hereq
 
 // ========================================
 // Executor Callbacks
 // ========================================
 
+void channel_restart_callback(const void * request_msg, void * response_msg){
+    // Cast messages to expected types
+    chassis_msgs__srv__RestartPowerChannel_Request * req_in =
+        (chassis_msgs__srv__RestartPowerChannel_Request *) request_msg;
+    chassis_msgs__srv__RestartPowerChannel_Response * res_in =
+        (chassis_msgs__srv__RestartPowerChannel_Response *) response_msg;
+
+    // Handle request message and set the response message values
+    uint8_t channel = req_in->channel_id;
+    // If a channel restart is already requested, return an error
+    if(channel_restart != 255){
+        res_in->error_code = chassis_msgs__srv__RestartPowerChannel_Response__ERROR_CODE_BUSY;
+        return;
+    //  If the channel is invalid, return an error
+    } else if(channel >= chassis_msgs__srv__RestartPowerChannel_Request__MAX_CHANNEL_ID) {
+        res_in->error_code = chassis_msgs__srv__RestartPowerChannel_Response__ERROR_CODE_BAD;
+        return;
+    } else {
+        channel_restart = channel;
+        res_in->error_code = chassis_msgs__srv__RestartPowerChannel_Response__ERROR_CODE_OK;
+    }
+}
 
 // ========================================
 // Public Task Methods (called in main tick)
@@ -144,9 +171,17 @@ rcl_ret_t ros_init(uint8_t board_id) {
         ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, KillswitchReport),
         KILLSWITCH_STATUS_PUBLISHER_NAME));
 
+    RCRETCHECK(rclc_service_init_default(
+        &channel_restart_service,
+        &node,
+        ROSIDL_GET_SRV_TYPE_SUPPORT(chassis_msgs, srv, RestartPowerChannel),
+        CHANNEL_RESTART_SERVICE_NAME));
+
     // Executor Initialization
     const int executor_num_handles = 2;
     RCRETCHECK(rclc_executor_init(&executor, &support.context, executor_num_handles, &allocator));
+    RCRETCHECK(rclc_executor_add_service(&executor, &channel_restart_service, &channel_restart_request_msg,
+  &channel_restart_response_msg, channel_restart_callback));
 
     // Note: Code in executor callbacks should be kept to a minimum
     // It should set whatever flags are necessary and get out
@@ -164,6 +199,7 @@ void ros_fini(void) {
     RCSOFTCHECK(rcl_publisher_fini(&heartbeat_publisher, &node));
     RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node));
     RCSOFTCHECK(rcl_publisher_fini(&killswitch_publisher, &node));
+    RCSOFTCHECK(rcl_service_fini(&channel_restart_service, &node));
     RCSOFTCHECK(rclc_executor_fini(&executor));
     RCSOFTCHECK(rcl_node_fini(&node));
     RCSOFTCHECK(rclc_support_fini(&support));
