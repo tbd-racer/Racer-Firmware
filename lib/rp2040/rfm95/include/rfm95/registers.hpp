@@ -1,10 +1,44 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
 #include <utility>
 
 namespace rfm95 {
 using register_t = uint8_t;
+
+/// @brief The clock frequency of the RFM95 module. Used in frequency
+/// calculations.
+static constexpr uint32_t clock_frequency = 32e7;
+static constexpr double frequency_step = 32e7 / static_cast<double>((1 << 19));
+
+/// @brief Calculate the frequency register value for the RFM95.
+/// @param frequency The desired frequency in Hz.
+/// @return The frequency register value.
+constexpr uint32_t calculate_frequency(double frequency) {
+  if (frequency <= 0) {
+    return 0;
+  }
+
+  // Finds the nearest register value for the given frequency.
+  const double frequency_steps = frequency / frequency_step;
+
+  // round to nearest value
+  const auto frequency_steps_rounded = [&]() {
+    if (frequency_steps - static_cast<uint32_t>(frequency_steps) >= 0.5) {
+      return static_cast<uint32_t>(frequency_steps) + 1;
+    } else {
+      return static_cast<uint32_t>(frequency_steps);
+    }
+  }();
+
+  // frequency is represented as a 24-bit value, so it must be less than 2^24.
+  if (frequency_steps_rounded > (1 << 24) - 1) {
+    return (1 << 24) - 1;
+  };
+
+  return frequency_steps_rounded;
+}
 
 enum class OpModes : uint8_t {
   SLEEP = 0b000,
@@ -16,6 +50,40 @@ enum class OpModes : uint8_t {
   ReceiveSingle = 0b110,
   ChannelActivityDetection = 0b111,
 };
+
+/// @brief Print the string representation of OpModes using printf
+/// @param mode The OpModes value to print
+inline void print_op_mode(OpModes mode) {
+  switch (mode) {
+  case OpModes::SLEEP:
+    printf("OpMode: SLEEP\n");
+    break;
+  case OpModes::STANDBY:
+    printf("OpMode: STANDBY\n");
+    break;
+  case OpModes::FrequencySynthesisTX:
+    printf("OpMode: Frequency Synthesis TX\n");
+    break;
+  case OpModes::Transmit:
+    printf("OpMode: Transmit\n");
+    break;
+  case OpModes::FrequencySynthesisRX:
+    printf("OpMode: Frequency Synthesis RX\n");
+    break;
+  case OpModes::ReceiveContinuous:
+    printf("OpMode: Receive Continuous\n");
+    break;
+  case OpModes::ReceiveSingle:
+    printf("OpMode: Receive Single\n");
+    break;
+  case OpModes::ChannelActivityDetection:
+    printf("OpMode: Channel Activity Detection\n");
+    break;
+  default:
+    printf("OpMode: Unknown\n");
+    break;
+  }
+}
 
 /// @brief Spreading factors for LoRa modulation.
 /// These values represent the spreading factor used in LoRa modulation.
@@ -68,42 +136,43 @@ enum class RxPayloadCrcOn : uint8_t {
   On = 1,
 };
 
+/// @brief Long Range Mode selection for RegOpMode
+enum class LongRangeMode : uint8_t {
+  FSK_OOK = 0,
+  LoRa = 1,
+};
+
 constexpr register_t RegFifo = 0x00;
-constexpr register_t RegOpMode = 0x01;
+// constexpr register_t RegOpMode = 0x01;
 constexpr register_t RegFrMsb = 0x06;
 constexpr register_t RegFrMid = 0x07;
 constexpr register_t RegFrLsb = 0x08;
-constexpr register_t RegPaConfig = 0x09;
-constexpr register_t RegPaRamp = 0x0A;
-constexpr register_t RegOcp = 0x0B;
-constexpr register_t RegLna = 0x0C;
+
 constexpr register_t RegFifoAddrPtr = 0x0D;
 constexpr register_t RegFifoTxBaseAddr = 0x0E;
 constexpr register_t RegFifoRxBaseAddr = 0x0F;
-constexpr register_t RegIrqFlags = 0x10;
+constexpr register_t RegFifoRxCurrentAddr = 0x10;
+// constexpr register_t RegIrqFlags = 0x10;
 constexpr register_t RegIrqFlagsMask = 0x11;
-constexpr register_t RegFreqIfMsb = 0x12;
-constexpr register_t RegFreqIFLsb = 0x13;
-constexpr register_t RegSymbTimeMsb = 0x14;
-constexpr register_t RegSymbTimeLsb = 0x15;
-constexpr register_t RegTxCfg = 0x16;
-constexpr register_t PayloadLength = 0x17;
-constexpr register_t RegPreambleMsg = 0x18;
-constexpr register_t RegPreambleLsb = 0x19;
-constexpr register_t RegModulationCfg = 0x1A;
-constexpr register_t RegRfMode = 0x1B;
-constexpr register_t RegHopPeriod = 0x1C;
 
-constexpr register_t RegNbRxBytes = 0x1D;
-constexpr register_t RegRxHeaderInfo = 0x1E;
-constexpr register_t RegRxHeaderCntValue = 0x1F;
-constexpr register_t RegRxPacketCntValue = 0x20;
-constexpr register_t RegModemStat = 0x21;
-constexpr register_t RegPktSnrValue = 0x22;
-constexpr register_t RegRssiValue = 0x23;
-constexpr register_t RegPktRssiValue = 0x24;
-constexpr register_t RegHopChannel = 0x25;
-constexpr register_t RegRxDataAddr = 0x26;
+constexpr register_t RegPayloadLength = 0x22;
+
+// @brief Register containing FifoRxBytesNb
+constexpr register_t RegRxNbBytes = 0x13;
+
+struct RegOpMode {
+  static constexpr register_t addr = 0x01;
+
+  /// @brief Set bit 7 to LongRangeMode (0: FSK/OOK, 1: LoRa)
+  static inline uint8_t set_long_range_mode(uint8_t value, LongRangeMode mode) {
+    return (value & 0b01111111) | (std::to_underlying(mode) << 7);
+  }
+
+  /// @brief Set bits 2-0 to Mode (device operating mode)
+  static inline uint8_t set_mode(uint8_t value, OpModes mode) {
+    return (value & 0b11111000) | std::to_underlying(mode);
+  }
+};
 
 struct RegModemConfig2 {
   static constexpr register_t addr = 0x1E;
@@ -117,20 +186,20 @@ struct RegModemConfig2 {
   // Set bit 3 to TxContinuousMode (0: normal, 1: continuous)
   static inline uint8_t set_tx_continuous_mode(uint8_t value,
                                                TxContinuousMode mode) {
-    return (value & 0b11110111) | (static_cast<uint8_t>(mode) << 3);
+    return (value & 0b11110111) | (std::to_underlying(mode) << 3);
   }
 
   // Set bit 2 to RxPayloadCrcOn
   static inline uint8_t set_rx_payload_crc_on(uint8_t value,
                                               RxPayloadCrcOn crc_on) {
-    return (value & 0b11111011) | (static_cast<uint8_t>(crc_on) << 2);
+    return (value & 0b11111011) | (std::to_underlying(crc_on) << 2);
   }
 
   // Set bits 1-0 to SymbTimeout (MSB bits 9:8)
   static inline uint8_t set_symb_timeout_msb(uint8_t value,
                                              uint8_t symb_timeout_msb) {
     // symb_timeout_msb should be 2 bits (bits 9:8 of timeout)
-    return (value & 0b11111100) | (symb_timeout_msb & 0b11);
+    return (value & 0b11111100) | symb_timeout_msb;
   }
 };
 
@@ -139,18 +208,49 @@ struct RegModemConfig1 {
 
   // Set bits 7-4 to the signal bandwidth value
   static inline uint8_t set_bandwidth(uint8_t value, SignalBandwidth bw) {
-    return (value & 0b00001111) | (static_cast<uint8_t>(bw) << 4);
+    return (value & 0b00001111) | (std::to_underlying(bw) << 4);
   }
 
   // Set bits 3-1 to the coding rate value
   static inline uint8_t set_coding_rate(uint8_t value, CodingRate cr) {
-    return (value & 0b11110001) | (static_cast<uint8_t>(cr) << 1);
+    return (value & 0b11110001) | (std::to_underlying(cr) << 1);
   }
 
   // Set bit 0 to ImplicitHeaderMode
   static inline uint8_t set_implicit_header_mode(uint8_t value,
                                                  ImplicitHeaderMode mode) {
-    return (value & 0b11111110) | (static_cast<uint8_t>(mode) & 0x1);
+    return (value & 0b11111110) | std::to_underlying(mode);
+  }
+};
+
+struct RegIrqFlags {
+  static constexpr register_t addr = 0x12;
+
+  /// @brief Structure to hold parsed interrupt flags
+  struct Flags {
+    bool rx_timeout;        ///< Bit 7: Timeout interrupt
+    bool rx_done;           ///< Bit 6: Packet reception complete interrupt
+    bool payload_crc_error; ///< Bit 5: Payload CRC error interrupt
+    bool valid_header;      ///< Bit 4: Valid header received in Rx
+    bool tx_done;  ///< Bit 3: FIFO Payload transmission complete interrupt
+    bool cad_done; ///< Bit 2: CAD complete
+    bool fhss_change_channel; ///< Bit 1: FHSS change channel interrupt
+    bool cad_detected;        ///< Bit 0: Valid Lora signal detected during CAD
+                              ///< operation
+  };
+
+  /// @brief Parse the RegIrqFlags register value into individual flags
+  /// @param value The raw register value
+  /// @return ParsedFlags structure with individual flag states
+  static inline Flags parse_flags(uint8_t value) {
+    return Flags{.rx_timeout = static_cast<bool>((value >> 7) & 0b1),
+                 .rx_done = static_cast<bool>((value >> 6) & 0b1),
+                 .payload_crc_error = static_cast<bool>((value >> 5) & 0b1),
+                 .valid_header = static_cast<bool>((value >> 4) & 0b1),
+                 .tx_done = static_cast<bool>((value >> 3) & 0b1),
+                 .cad_done = static_cast<bool>((value >> 2) & 0b1),
+                 .fhss_change_channel = static_cast<bool>((value >> 1) & 0b1),
+                 .cad_detected = static_cast<bool>((value >> 0) & 0b1)};
   }
 };
 

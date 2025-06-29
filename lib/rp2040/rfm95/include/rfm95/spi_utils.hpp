@@ -2,10 +2,8 @@
 #define RFM95_SPI_UTILS_HPP
 
 #include "rfm95/registers.hpp"
-#include <expected>
 #include <functional>
 #include <hardware/spi.h>
-#include <optional>
 #include <pico/stdlib.h>
 #include <span>
 #include <stdint.h>
@@ -22,8 +20,6 @@ inline register_t add_write_bit(register_t reg) {
 inline register_t add_read_bit(register_t reg) {
   return reg & 0b01111111; // Clear the write bit (bit 7)
 }
-
-enum class SPIErrorCode { WriteFailed, ReadWriteFailed, ReadFailed };
 
 class set_chip_select {
 public:
@@ -64,41 +60,30 @@ public:
   /// @param value the byte to write
   /// @return The number of bytes written.
   inline size_t write_blocking(uint8_t value) const {
-    printf("Writing byte: 0b%08b\n", value);
+    // printf("Writing byte: 0b%08b\n", value);
     return spi_write_blocking(spi_, &value, 1);
   }
 
-  inline std::expected<void, SPIErrorCode>
-  write_blocking_strict(uint8_t value) const {
-    if (write_blocking(value) < 1) {
-      return std::unexpected(SPIErrorCode::WriteFailed);
-    }
-    return {};
+  inline void write_blocking_strict(uint8_t value) const {
+    write_blocking(value);
   }
 
-  inline std::expected<void, SPIErrorCode>
-  write_blocking_strict(const std::span<const uint8_t> data) const {
-    if (write_blocking(data) < data.size()) {
-      return std::unexpected(SPIErrorCode::WriteFailed);
-    }
-    return {};
+  inline void write_blocking_strict(const std::span<const uint8_t> data) const {
+    write_blocking(data);
   }
 
-  inline std::expected<uint8_t, SPIErrorCode> read_byte_strict() const {
+  inline uint8_t read_byte_strict() const {
     uint8_t byte = 0;
-    if (spi_read_blocking(spi_, 0, &byte, 1) < 1) {
-      return std::unexpected(SPIErrorCode::ReadFailed);
-    }
+    spi_read_blocking(spi_, 0, &byte, 1);
     return byte;
   }
 
-  inline std::expected<void, SPIErrorCode> write_register(register_t reg,
-                                                          uint8_t value) const {
+  inline void write_register(register_t reg, uint8_t value) const {
     uint8_t data[2] = {add_write_bit(reg), value};
 
     set_chip_select cs{cs_pin_};
 
-    return write_blocking_strict(data);
+    write_blocking_strict(data);
   }
 
   /// @brief Writes data to a specified register over SPI.
@@ -110,43 +95,54 @@ public:
   ///
   /// @param reg The register address to write to.
   /// @param data The data to write to the register as a span of bytes.
-  /// @return std::expected<size_t, SPIErrorCode>
-  ///         On success, returns the number of bytes written (data size + 1 for
-  ///         the register byte). On failure, returns an SPIErrorCode.
+  /// @return The number of bytes written (data size + 1 for the register byte).
   ///
-  inline std::expected<size_t, SPIErrorCode>
-  write_register(register_t reg, const std::span<const uint8_t> data) const {
+  inline size_t write_register(register_t reg,
+                               const std::span<const uint8_t> data) const {
     if (data.empty()) {
+      printf("Warning: Attempted to write empty data to register 0x%02X\n",
+             reg);
       return 0;
     }
 
     set_chip_select cs{cs_pin_};
 
-    return write_blocking_strict(add_write_bit(reg))
-        .and_then([&]() { return write_blocking_strict(data); })
-        .transform([&]() {
-          return data.size() + 1; // +1 for the register byte
-        });
+    write_blocking_strict(add_write_bit(reg));
+    write_blocking_strict(data);
+    return data.size() + 1; // +1 for the register byte
   }
 
-  inline std::expected<uint8_t, SPIErrorCode>
-  read_register(register_t reg) const {
+  inline uint8_t read_register(register_t reg) const {
     set_chip_select cs{cs_pin_};
 
-    return write_blocking_strict(add_read_bit(reg)).and_then([&]() {
-      return read_byte_strict();
-    });
+    write_blocking_strict(add_read_bit(reg));
+    return read_byte_strict();
   }
 
-  inline std::expected<void, SPIErrorCode>
-  update_register(register_t reg,
-                  std::function<uint8_t(uint8_t)> functor) const {
-    // read the regitster
-    // update the value using the functor
-    // write the register back
+  inline void read_register_repeated(register_t reg, size_t len,
+                                     std::span<uint8_t> buffer) const {
+    set_chip_select cs{cs_pin_};
 
-    return read_register(reg).transform(functor).and_then(
-        [&](uint8_t value) { return write_register(reg, value); });
+    const auto reg_with_read_bit = add_read_bit(reg);
+
+    spi_read_blocking(spi_, reg_with_read_bit, buffer.data(), len);
+  }
+
+  /// @brief Updates a register by reading its current value, applying a
+  /// transformation function, and writing it back.
+  ///
+  /// @param reg The register address to update.
+  /// @param functor A function that takes the current register value and
+  /// returns the new value.
+  ///
+  inline void update_register(register_t reg,
+                              std::function<uint8_t(uint8_t)> functor) const {
+    const auto current_value = read_register(reg);
+    const auto new_value = functor(current_value);
+    write_register(reg, new_value);
+
+    // printf("Updating Register 0x%02X from 0b%08b to 0b%08b\n", reg,
+    //        current_value, new_value);
   }
 
 private:
