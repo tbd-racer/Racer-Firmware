@@ -1,3 +1,6 @@
 {
-    "cmake.sourceDirectory": "/home/coalman321/Racer-Firmware/boards/tbd_bms"
+    "cmake.sourceDirectory": "/home/coalman321/Racer-Firmware/boards/tbd_power",
+    "files.associations": {
+        "canbus.h": "c"
+    }
 }

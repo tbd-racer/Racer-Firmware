@@ -83,15 +83,6 @@ bool is_ros_connected(void);
  */
 bool ros_ping(void);
 
-/**
- * @brief Determine if a power cycle has been requested
- *
- * if this function returns true, it will clear the internal flag and determine the request as serviced
- *
- * @return true if power cycle event has been requested
- */
-bool power_cycle_requested(void);
-
 // ========================================
 // ROS Task Functions
 // ========================================
@@ -99,5 +90,11 @@ bool power_cycle_requested(void);
 rcl_ret_t ros_heartbeat_pulse(uint8_t client_id);
 
 rcl_ret_t ros_update_firmware_status(uint8_t client_id);
+
+rcl_ret_t ros_update_killswitches(void);
+
+void channel_restart_callback(const void * request_msg, void * response_msg);
+
+static uint8_t channel_restart = 255; // 255 means no channel restart requested
 
 #endif

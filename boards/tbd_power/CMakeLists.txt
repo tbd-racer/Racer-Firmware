@@ -42,11 +42,13 @@ pico_set_program_name(tbd_power "Power Board Firmware")
 # Define linking and targets
 pico_add_extra_outputs(tbd_power)
 target_link_libraries(tbd_power PUBLIC
+	driver_ads7828    # ADC library for power board
 	driver_async_i2c  # Async I2C Driver for the display
 	driver_led		  # Status LED Support
+
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
-	hardware_i2c
+	
 	pico_stdlib		  # Pico SDK Standard Library
 )

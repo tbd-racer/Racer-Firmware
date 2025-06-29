@@ -1,14 +1,17 @@
 #include "pico/stdlib.h"
 
 #include "driver/async_i2c.h"
+#include "driver/ads7828.h"
 #include "driver/canbus.h"
 #include "driver/led.h"
 #include "micro_ros_pico/transport_can.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
+
 #include "ros.h"
 #include "safety_interface.h"
+#include <chassis_msgs/srv/restart_power_channel.h>
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -16,16 +19,22 @@
 #define UROS_CONNECT_PING_TIME_MS 1000
 #define HEARTBEAT_TIME_MS 100
 #define FIRMWARE_STATUS_TIME_MS 1000
+#define KILLSWITCH_TIME_MS 100
 #define LED_UPTIME_INTERVAL_MS 250
+#define CHANNEL_RESTART_TIME_MS 1000
+
+bool power_channel_restart_active = false; // Flag to indicate if a channel restart is currently active
 
 // Initialize all to nil time
 // For background timers, they will fire immediately
 // For ros timers, they will be reset before being ticked by start_ros_timers
 absolute_time_t next_heartbeat = {0};
 absolute_time_t next_status_update = {0};
+absolute_time_t next_kill_update = {0};
 absolute_time_t next_led_update = {0};
 absolute_time_t next_connect_ping = {0};
 absolute_time_t next_display_update = {0};
+absolute_time_t next_channel_restart = {0};
 
 /**
  * @brief Check if a timer is ready. If so advance it to the next interval.
@@ -66,6 +75,18 @@ static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bo
 static void start_ros_timers(){
     next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
     next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
+    next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
+}
+
+int mapROSPinToGPIOPin(int pin) {
+    // Map ROS pin numbers to GPIO pin numbers
+    switch(pin) {
+        case chassis_msgs__srv__RestartPowerChannel_Request__LIDAR_CHANNEL: return LIDR_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__JETSON_CHANNEL: return AGX_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__AUX_CHANNEL: return NANO_PWR_CTL_PIN;
+        case chassis_msgs__srv__RestartPowerChannel_Request__NETWORK_CHANNEL: return NET_PWR_CTL_PIN;
+        default: return 255; // Invalid pin, return an invalid GPIO pin
+    }
 }
 
 /**
@@ -82,6 +103,11 @@ static void tick_ros_tasks() {
         RCSOFTRETVCHECK(ros_update_firmware_status(CAN_BUS_CLIENT_ID));
     }
 
+    // Send killswitch updates
+    if(timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)){
+        RCSOFTRETVCHECK(ros_update_killswitches());
+    }
+
 }
 
 static void tick_background_tasks() {
@@ -90,6 +116,21 @@ static void tick_background_tasks() {
     if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
         // update the RGB led
         led_network_online_set(canbus_check_online());
+    }
+
+    // 255 means no channel restart requested
+    if(channel_restart != 255){
+        if(!power_channel_restart_active) {
+            next_channel_restart = make_timeout_time_ms(CHANNEL_RESTART_TIME_MS);
+            power_channel_restart_active = true;
+            gpio_put(mapROSPinToGPIOPin(channel_restart), 0); // Set the channel GPIO low
+        }
+
+        // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
+        if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
+            gpio_put(mapROSPinToGPIOPin(channel_restart), 1); // Set the channel GPIO high
+            channel_restart = 255; // Reset the channel restart request
+        }
     }
 }
 
@@ -104,6 +145,29 @@ int main() {
     led_init();
     micro_ros_init_error_handling();
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
+    ads7828_init();
+
+    gpio_init(PACK1_ACTIVE_PIN);
+    gpio_set_dir(PACK1_ACTIVE_PIN, GPIO_IN);
+
+    gpio_init(PACK2_ACTIVE_PIN);
+    gpio_set_dir(PACK2_ACTIVE_PIN, GPIO_IN);
+
+    gpio_init(AGX_PWR_CTL_PIN);
+    gpio_set_dir(AGX_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(AGX_PWR_CTL_PIN, 1);
+
+    gpio_init(LIDR_PWR_CTL_PIN);
+    gpio_set_dir(LIDR_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(LIDR_PWR_CTL_PIN, 1);
+
+    gpio_init(NET_PWR_CTL_PIN);
+    gpio_set_dir(NET_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(NET_PWR_CTL_PIN, 1);
+
+    gpio_init(NANO_PWR_CTL_PIN);
+    gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
+    gpio_put(NANO_PWR_CTL_PIN, 1);
 
     sleep_ms(1000);
     safety_tick();

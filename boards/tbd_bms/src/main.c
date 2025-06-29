@@ -1,5 +1,7 @@
 #include "pico/stdlib.h"
 
+#include "pico/stdio_usb.h"
+
 #include "driver/async_i2c.h"
 #include "driver/canbus.h"
 #include "driver/led.h"
@@ -145,6 +147,7 @@ int main() {
 
     // Initialize stdio
     stdio_init_all();
+    stdio_usb_init();
     LOG_INFO("%s", FULL_BUILD_TAG);
 
     // Perform all initializations
@@ -155,7 +158,6 @@ int main() {
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
     // display_init();
 
-    sleep_ms(1000);
     safety_tick();
 
     // start the bq40z80
@@ -175,6 +177,8 @@ int main() {
         // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
         panic("Failed to initialize CAN bus hardware!");
     }
+
+    sleep_ms(1000);
 
     // Enter main loop
     // This is split into two sections of timers

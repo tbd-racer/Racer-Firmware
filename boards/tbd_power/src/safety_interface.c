@@ -34,12 +34,29 @@ void safety_interface_setup(void) {
 
 }
 
+void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
+    safety_raise_fault(FAULT_CAN_INTERNAL_ERROR);
+}
+
+void safety_handle_can_receive_error(__unused enum canbus_receive_error_codes err_code) {
+    //safety_raise_fault(FAULT_CAN_RECV_ERROR);
+}
+
 void safety_interface_init(void) {
-    // TODO: Modify this function to add code to be called during safety_init
+    canbus_set_receive_error_cb(safety_handle_can_receive_error);
+    canbus_set_internal_error_cb(safety_handle_can_internal_error);
 }
 
 void safety_interface_tick(void) {
+    // TODO read the KS states in here
+    // Read the onboard killswitch
+    safety_kill_switch_update(0, false, true);
 
+    // Update the offboard kill switches
+    // Offboard starts at 1
+    for(int i = 1; i < NUM_KILL_SWITCHES; i++){
+        safety_kill_switch_update(0, false, false);
+    }
 }
 
 void safety_interface_deinit(void) {
@@ -51,9 +68,14 @@ void safety_interface_deinit(void) {
 // Constant Calculations - Does not need to be modified
 // ========================================
 
-struct kill_switch_state kill_switch_states[NUM_KILL_SWITCHES];
+struct kill_switch_state kill_switch_states[NUM_KILL_SWITCHES] = {[0 ... NUM_KILL_SWITCHES-1] = { .enabled = false }};
 const int num_kill_switches = sizeof(kill_switch_states)/sizeof(*kill_switch_states);
 static_assert(sizeof(kill_switch_states)/sizeof(*kill_switch_states) <= 32, "Too many kill switches defined");
+
+const char * safety_lookup_killswitch_id(uint32_t switch_id){
+    assert(switch_id < sizeof(killswitch_id_list)/sizeof(*killswitch_id_list));
+    return killswitch_id_list[switch_id];
+}
 
 const char * safety_lookup_fault_id(uint32_t fault_id) {
     return (fault_id < sizeof(fault_string_list)/sizeof(*fault_string_list) ? fault_string_list[fault_id] : "UNKNOWN");
