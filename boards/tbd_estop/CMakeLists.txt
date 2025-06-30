@@ -22,7 +22,7 @@ project(estop C CXX ASM)
 titan_firmware_init()
 
 # Define executable
-file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
+file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
 add_executable(estop
 	${SOURCES}
 )
@@ -50,5 +50,3 @@ target_link_libraries(estop PUBLIC
 	hardware_spi
 	rfm95
 )
-
-target_compile_features(estop PUBLIC cxx_std_23)

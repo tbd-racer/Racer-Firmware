@@ -48,6 +48,8 @@ target_link_libraries(estop PUBLIC
 	pico_stdio_usb
 	pico_rand
 	hardware_spi
+	hardware_gpio
+	hardware_timer
 	rfm95
 )
 
