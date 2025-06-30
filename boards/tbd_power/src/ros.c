@@ -28,7 +28,7 @@
 #define HEARTBEAT_PUBLISHER_NAME "state/fw_heartbeat"
 #define FIRMWARE_STATUS_PUBLISHER_NAME "state/firmware"
 #define KILLSWITCH_STATUS_PUBLISHER_NAME "state/kill"
-#define CHANNEL_RESTART_SERVICE_NAME ""
+#define CHANNEL_RESTART_SERVICE_NAME "state/restart"
 
 bool ros_connected = false;
 

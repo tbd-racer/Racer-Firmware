@@ -48,7 +48,7 @@ target_link_libraries(tbd_power PUBLIC
 
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
-	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
+	micro_ros_usb	  # Micro ros support (supports _can, _usb, _eth)
 	
 	pico_stdlib		  # Pico SDK Standard Library
 )

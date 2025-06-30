@@ -1,16 +1,19 @@
 #include "pico/stdlib.h"
 
 #include "driver/ads7828.h"
-#include "driver/async_i2c.h"
-#include "driver/canbus.h"
+// #include "driver/canbus.h" CRH: USB transport is used instead of CAN
 #include "driver/led.h"
-#include "micro_ros_pico/transport_can.h"
+// #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead
+// of CAN
+#include "micro_ros_pico/transport_usb.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
 #include "ros.h"
 #include "safety_interface.h"
 #include <chassis_msgs/srv/restart_power_channel.h>
+
+#include "radio.h"
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -21,6 +24,9 @@
 #define KILLSWITCH_TIME_MS 100
 #define LED_UPTIME_INTERVAL_MS 250
 #define CHANNEL_RESTART_TIME_MS 1000
+
+// rfm radio for estop communication
+rfm9x_t radio;
 
 bool power_channel_restart_active =
     false; // Flag to indicate if a channel restart is currently active
@@ -117,28 +123,19 @@ static void tick_ros_tasks() {
 }
 
 static void tick_background_tasks() {
-  canbus_tick();
+  // canbus_tick(); CRH: USB transport is used instead of CAN
 
-  if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
-    // update the RGB led
-    led_network_online_set(canbus_check_online());
-  }
+  // CRH: USB transport is used instead of CAN
+  // if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+  //     // update the RGB led
+  //     led_network_online_set(canbus_check_online());
+  // }
 
-  // 255 means no channel restart requested
-  if (channel_restart != 255) {
-    if (!power_channel_restart_active) {
-      next_channel_restart = make_timeout_time_ms(CHANNEL_RESTART_TIME_MS);
-      power_channel_restart_active = true;
-      gpio_put(mapROSPinToGPIOPin(channel_restart),
-               0); // Set the channel GPIO low
-    }
-
-    // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
-    if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
-      gpio_put(mapROSPinToGPIOPin(channel_restart),
-               1);           // Set the channel GPIO high
-      channel_restart = 255; // Reset the channel restart request
-    }
+  // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
+  if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
+    gpio_put(mapROSPinToGPIOPin(channel_restart),
+             1);           // Set the channel GPIO high
+    channel_restart = 255; // Reset the channel restart request
   }
 }
 
@@ -178,14 +175,34 @@ int main() {
   gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
   gpio_put(NANO_PWR_CTL_PIN, 1);
 
+  // ~~~~~ Configure Radio ~~~~~ //
+  spi_init(spi1, 2000 * 2000);
+  spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+  gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
+
+  if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, 915000000)) {
+    LOG_INFO("Radio initialization failed!\n");
+    return -1;
+  }
+
+  rfm9x_set_spreading_factor(&radio, RADIO_SPREADING_FACTOR);
+  rfm9x_set_signal_bandwidth(&radio, RADIO_SIGNAL_BANDWIDTH);
+  rfm9x_set_coding_rate(&radio, RADIO_CODING_RATE);
+
+  rfm9x_listen(&radio);
+
   sleep_ms(1000);
   safety_tick();
 
-  if (!transport_can_init(CAN_BUS_CLIENT_ID)) {
-    // No point in continuing onwards from here, if we can't initialize CAN
-    // hardware might as well panic and retry
-    panic("Failed to initialize CAN bus hardware!");
-  }
+  // if (!transport_can_init(CAN_BUS_CLIENT_ID)) { CRH: USB transport is used
+  // instead of CAN
+  //     // No point in continuing onwards from here, if we can't initialize CAN
+  //     hardware might as well panic and retry panic("Failed to initialize CAN
+  //     bus hardware!");
+  // }
+  transport_usb_init(); // CRH: USB transport is used instead of CAN
 
   // Enter main loop
   // This is split into two sections of timers
@@ -233,6 +250,22 @@ int main() {
       if (time_reached(next_connect_ping)) {
         ros_ping();
         next_connect_ping = make_timeout_time_ms(UROS_CONNECT_PING_TIME_MS);
+      }
+    }
+
+    // handle radio traffic
+    uint8_t packet_buffer[256];
+    int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer),
+                                 true, false, false, 100);
+    if (received > 0) {
+      uint8_t id = packet_buffer[0];
+      uint8_t stop_request = packet_buffer[1];
+      if (stop_request > 0) {
+        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
+        LOG_INFO("Radio kill switch %d asserting", id);
+      }
+      else {
+        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
       }
     }
 
