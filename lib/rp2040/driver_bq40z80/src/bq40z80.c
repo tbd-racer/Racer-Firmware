@@ -14,32 +14,34 @@
 
 #define BQ40Z80_I2C_INST __CONCAT(i2c, BQ40Z80_I2C_PORT)
 
-uint pio_12c_program;
-
 static uint8_t bq_handle_i2c_transfer(uint8_t* bq_reg, uint8_t* rx_buf, uint len){
-    int ret_code = -1; // if you set this to zero, the compiler *will delete* this function
+    int ret_code = PICO_ERROR_GENERIC;
     uint retries = 0;
 
     // slow down the transfers, smbus and pio no likey :/
-    sleep_ms(1);
+    // sleep_ms(1);
 
-    while(ret_code && retries < RETRANSMIT_COUNT){
+    while(ret_code == PICO_ERROR_GENERIC && retries < RETRANSMIT_COUNT){
         // send the request to the chip
-        ret_code = 0;
-        ret_code |= i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, bq_reg, 1, false);
-        ret_code |= i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, rx_buf, len, false);
+        ret_code = i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, bq_reg, 1, false);
+        if(ret_code == PICO_ERROR_GENERIC){
+            sleep_ms(3);
+            retries ++;
+            continue;
+        }
 
-        if(ret_code){
+        ret_code = i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, rx_buf, len, false);
+        if(ret_code == PICO_ERROR_GENERIC){
             // let i2c relax a sec, something with smbus and the chip being busy
             sleep_ms(3);
             retries ++;
         }
     }
 
-    if(ret_code){
+    if(ret_code == PICO_ERROR_GENERIC){
         //something bad happened to the i2c, panic
         LOG_FATAL("I2C transfer error: %d", ret_code);
-        panic("PIO I2C NACK during transfer %d times", RETRANSMIT_COUNT);
+        panic("I2C NACK during transfer %d times", RETRANSMIT_COUNT);
     }
 
     return retries;
@@ -55,8 +57,7 @@ uint8_t bq_write_only_transfer(uint8_t* tx_buf, uint len){
     while(ret_code && retries < RETRANSMIT_COUNT){
         // send the request to the chip
         ret_code = i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, tx_buf, len, false);
-
-        if(ret_code){
+        if(ret_code == PICO_ERROR_GENERIC){
             // let i2c relax a sec, something with smbus and the chip being busy
             sleep_ms(3);
             retries ++;
@@ -66,7 +67,7 @@ uint8_t bq_write_only_transfer(uint8_t* tx_buf, uint len){
     if(ret_code){
         //something bad happened to the i2c, panic
         LOG_FATAL("I2C write error: %d", ret_code);
-        panic("PIO I2C NACK during MAC_WRITE %d times", RETRANSMIT_COUNT);
+        panic("I2C NACK during MAC_WRITE %d times", RETRANSMIT_COUNT);
     }
 
     return retries;
@@ -93,11 +94,18 @@ uint8_t bq_init() {
         int ret_code = 0;
 
         // send the request to the chip
-        ret_code |= i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 1, false);
-        ret_code |= i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 2, false);
+        ret_code = i2c_write_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 1, false);
+        if(ret_code == PICO_ERROR_GENERIC){
+            gpio_put(BMS_WAKE_PIN, 1);
+            sleep_ms(1000);
+            gpio_put(BMS_WAKE_PIN, 0);
+            retries++;
+            continue;
+        }
 
         // Check for valid data
-        if(ret_code != 0 || data[0] == 0x00 || data[0] == 0xFF) {
+        ret_code = i2c_read_blocking(BQ40Z80_I2C_INST, BQ_ADDR, data, 2, false);
+        if(ret_code == PICO_ERROR_GENERIC || data[0] == 0x00 || data[0] == 0xFF) {
             gpio_put(BMS_WAKE_PIN, 1);
             sleep_ms(1000);
             gpio_put(BMS_WAKE_PIN, 0);
@@ -189,8 +197,10 @@ uint16_t bq_time_to_empty(){
 struct bq_pack_info_t bq_pack_mfg_info(){
     struct bq_pack_info_t pack_info;
 
-    // read the mfg serial #
+    // generic data buffer for all msg info transfers
     uint8_t data[21] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+    // read the mfg serial #
     uint8_t reg_addr[1] = {BQ_READ_CELL_DATE};
     bq_handle_i2c_transfer(reg_addr, data, 2);
 

@@ -92,28 +92,6 @@ rcl_ret_t ros_update_firmware_status(uint8_t client_id) {
     status_msg.version_minor = MINOR_VERSION;
     status_msg.version_release_type = RELEASE_TYPE;
     status_msg.faults = *fault_list_reg;
-    status_msg.kill_switches_enabled = 0;
-    status_msg.kill_switches_asserting_kill = 0;
-    status_msg.kill_switches_needs_update = 0;
-    status_msg.kill_switches_timed_out = 0;
-
-    for (int i = 0; i < NUM_KILL_SWITCHES; i++) {
-        if (kill_switch_states[i].enabled) {
-            status_msg.kill_switches_enabled |= (1<<i);
-        }
-
-        if (kill_switch_states[i].asserting_kill) {
-            status_msg.kill_switches_asserting_kill |= (1<<i);
-        }
-
-        if (kill_switch_states[i].needs_update) {
-            status_msg.kill_switches_needs_update |= (1<<i);
-        }
-
-        if (kill_switch_states[i].needs_update && time_reached(kill_switch_states[i].update_timeout)) {
-            status_msg.kill_switches_timed_out |= (1<<i);
-        }
-    }
 
     RCSOFTRETCHECK(rcl_publish(&firmware_status_publisher, &status_msg, NULL));
 

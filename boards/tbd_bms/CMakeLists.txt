@@ -48,9 +48,13 @@ target_link_libraries(tbd_bms PUBLIC
 	driver_led		  # Status LED Support
 	driver_ssd1306	  # SSD1306 LCD Support
 	driver_bq40z80    # BQ40z80 BMS Support
+
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
-	hardware_i2c
+
 	pico_stdlib		  # Pico SDK Standard Library
+	pico_stdio_usb
+	hardware_i2c
+
 )
