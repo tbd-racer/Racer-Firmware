@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "driver/canbus.h"
+// #include "driver/canbus.h" CRH: USB transport is used instead of CAN
 #include "driver/led.h"
 
 #include "safety_interface.h"
@@ -34,17 +34,19 @@ void safety_interface_setup(void) {
 
 }
 
-void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
-    safety_raise_fault(FAULT_CAN_INTERNAL_ERROR);
-}
+// CRH: USB transport is used instead of CAN
+// void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
+//     safety_raise_fault(FAULT_CAN_INTERNAL_ERROR);
+// }
 
-void safety_handle_can_receive_error(__unused enum canbus_receive_error_codes err_code) {
-    //safety_raise_fault(FAULT_CAN_RECV_ERROR);
-}
+// void safety_handle_can_receive_error(__unused enum canbus_receive_error_codes err_code) {
+//     //safety_raise_fault(FAULT_CAN_RECV_ERROR);
+// }
 
 void safety_interface_init(void) {
-    canbus_set_receive_error_cb(safety_handle_can_receive_error);
-    canbus_set_internal_error_cb(safety_handle_can_internal_error);
+    // CRH: USB transport is used instead of CAN
+    // canbus_set_receive_error_cb(safety_handle_can_receive_error); 
+    // canbus_set_internal_error_cb(safety_handle_can_internal_error);
 }
 
 void safety_interface_tick(void) {

@@ -2,9 +2,10 @@
 
 #include "driver/async_i2c.h"
 #include "driver/ads7828.h"
-#include "driver/canbus.h"
+// #include "driver/canbus.h" CRH: USB transport is used instead of CAN
 #include "driver/led.h"
-#include "micro_ros_pico/transport_can.h"
+// #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead of CAN
+#include "micro_ros_pico/transport_usb.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
@@ -111,12 +112,13 @@ static void tick_ros_tasks() {
 }
 
 static void tick_background_tasks() {
-    canbus_tick();
+    // canbus_tick(); CRH: USB transport is used instead of CAN
 
-    if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
-        // update the RGB led
-        led_network_online_set(canbus_check_online());
-    }
+    // CRH: USB transport is used instead of CAN
+    // if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+    //     // update the RGB led
+    //     led_network_online_set(canbus_check_online());
+    // }
 
     // 255 means no channel restart requested
     if(channel_restart != 255){
@@ -172,10 +174,11 @@ int main() {
     sleep_ms(1000);
     safety_tick();
 
-    if (!transport_can_init(CAN_BUS_CLIENT_ID)) {
-        // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
-        panic("Failed to initialize CAN bus hardware!");
-    }
+    // if (!transport_can_init(CAN_BUS_CLIENT_ID)) { CRH: USB transport is used instead of CAN
+    //     // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
+    //     panic("Failed to initialize CAN bus hardware!");
+    // }
+    transport_usb_init(); // CRH: USB transport is used instead of CAN
 
     // Enter main loop
     // This is split into two sections of timers
