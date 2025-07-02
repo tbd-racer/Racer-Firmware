@@ -7,7 +7,7 @@
 
 // This defines which CAN bus this board is connected into
 // The CAN bus is defined in the corresponding robot definition files (rate, enable FD, etc.)
-#define CAN_BUS_NAME EXTERNAL_CAN
+#define CAN_BUS_NAME INTERNAL_CAN
 #define CAN_BUS_CLIENT_ID 1
 #define MCP2517FD_TERM_SENSE_ON_INT0 0 // intentionally disable term sense
 

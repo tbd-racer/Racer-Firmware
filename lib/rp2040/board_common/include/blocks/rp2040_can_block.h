@@ -30,7 +30,7 @@
 #define INTERNAL_CAN_FD_RATE    5000000
 #define INTERNAL_CAN_ID         1
 
-#define INTERNAL_CAN_ENABLE_FD  0
+#define EXTERNAL_CAN_ENABLE_FD  0
 #define EXTERNAL_CAN_RATE       250000
 #define EXTERNAL_CAN_ID         2
 
