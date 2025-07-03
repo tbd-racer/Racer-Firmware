@@ -5,22 +5,13 @@
 #include <rfm95/rfm9x.h>
 #include <stdio.h>
 
-#define PICO_DEFAULT_LED_PIN 25
-
-static const uint32_t spi_rx_pin = 16;
-static const uint32_t spi_tx_pin = 19;
-static const uint32_t spi_sck_pin = 18;
-static const uint32_t spi_cs_pin = 17;
-static const uint32_t irq_pin = 15;
-static const uint32_t radio_rst_pin = 14;
-
 static bool handle_rfm95_interrupt = false;
 
-bi_decl(bi_3pins_with_func(spi_rx_pin, spi_tx_pin, spi_sck_pin, GPIO_FUNC_SPI));
+bi_decl(bi_3pins_with_func(RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_SCK_PIN, GPIO_FUNC_SPI));
 
 void gpio_callback(uint gpio, uint32_t events) {
   (void)events;
-  if (gpio == irq_pin) {
+  if (gpio == RADIO_IRQ_PIN) {
     handle_rfm95_interrupt = true;
   }
 }
@@ -39,20 +30,20 @@ int main() {
   // setup hardware spi 0
   spi_init(spi0, 2000 * 2000);
   spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-  gpio_set_function(spi_rx_pin, GPIO_FUNC_SPI);
-  gpio_set_function(spi_tx_pin, GPIO_FUNC_SPI);
-  gpio_set_function(spi_sck_pin, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
 
   // setup chip select pin
-  gpio_init(spi_cs_pin);
-  gpio_set_dir(spi_cs_pin, GPIO_OUT);
-  gpio_put(spi_cs_pin, true);
-  bi_decl(bi_1pin_with_name(spi_cs_pin, "SPI CS"));
+  gpio_init(RADIO_CS_PIN);
+  gpio_set_dir(RADIO_CS_PIN, GPIO_OUT);
+  gpio_put(RADIO_CS_PIN, true);
+  bi_decl(bi_1pin_with_name(RADIO_CS_PIN, "SPI CS"));
 
   // setup the RFM95 interrupt pin
-  gpio_init(irq_pin);
-  gpio_set_dir(irq_pin, GPIO_IN);
-  gpio_set_irq_enabled_with_callback(irq_pin, GPIO_IRQ_EDGE_RISE, true,
+  gpio_init(RADIO_IRQ_PIN);
+  gpio_set_dir(RADIO_IRQ_PIN, GPIO_IN);
+  gpio_set_irq_enabled_with_callback(RADIO_IRQ_PIN, GPIO_IRQ_EDGE_RISE, true,
                                      gpio_callback);
 
   // Initialize stdio
@@ -70,7 +61,7 @@ int main() {
 
   // Initialize RFM9x radio with correct parameters
   rfm9x_t radio;
-  if (!rfm9x_init(&radio, spi0, spi_cs_pin, radio_rst_pin, 915000000)) {
+  if (!rfm9x_init(&radio, spi0, RADIO_CS_PIN, RADIO_RST_PIN, 915000000)) {
     printf("Radio initialization failed!\n");
     return -1;
   }

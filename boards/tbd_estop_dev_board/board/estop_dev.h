@@ -3,12 +3,10 @@
 
 #define PICO_TARGET_NAME "tbd_estop"
 
-// Radio configs
 #include "blocks/rfm95_base.h"
 
-// Button PINS
-#define BUTTON_STAT_PIN 25
-#define BUTTON_LED_PIN 24 // (CJT) IDK
+// status LEDs 
+#define PICO_DEFAULT_LED_PIN 25
 
 // Radio connections
 #define RADIO_MISO_PIN 16
@@ -17,7 +15,6 @@
 #define RADIO_CS_PIN 17
 #define RADIO_IRQ_PIN 15
 #define RADIO_RST_PIN 14
-
-
+#define RADIO_SPI_INST 0
 
 #endif

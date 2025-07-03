@@ -8,7 +8,7 @@ list(APPEND PICO_BOARD_HEADER_DIRS ${BOARD_HEADER_DIR})
 
 # The Target Board
 # This also impacts the upload_tool for automatic device selection
-set(PICO_BOARD estop)
+set(PICO_BOARD estop_dev)
 
 # Include global definitions
 execute_process(COMMAND git rev-parse --show-cdup
@@ -18,32 +18,32 @@ get_filename_component(REPO_DIR "${CMAKE_CURRENT_LIST_DIR}/${relative_path_to_re
 include(${REPO_DIR}/global_defs.cmake)
 
 # Define Project
-project(estop C CXX ASM)
+project(estop_dev C CXX ASM)
 titan_firmware_init()
 
 # Define executable
 file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
-add_executable(estop
+add_executable(estop_dev
 	${SOURCES}
 )
-target_include_directories(estop PUBLIC include)
+target_include_directories(estop_dev PUBLIC include)
 
 # Set version: major minor (see titan/version.h for more info)
-titan_generate_version_tag(estop 1 0)
+titan_generate_version_tag(estop_dev 1 0)
 
 # Configure pico-sdk
-pico_enable_stdio_usb(estop 1)
-pico_enable_stdio_uart(estop 0)
-pico_set_program_name(estop "Power Board Firmware")
+pico_enable_stdio_usb(estop_dev 1)
+pico_enable_stdio_uart(estop_dev 0)
+pico_set_program_name(estop_dev "Power Board Firmware")
 
 # Enable the 'make upload' and 'make serial' commands for project
-# titan_use_upload_tool(estop)
-# titan_enable_bootloader(estop can ${BOARD_HEADER_DIR})
+# titan_use_upload_tool(estop_dev)
+# titan_enable_bootloader(estop_dev can ${BOARD_HEADER_DIR})
 
 
 # Define linking and targets
-pico_add_extra_outputs(estop)
-target_link_libraries(estop PUBLIC
+pico_add_extra_outputs(estop_dev)
+target_link_libraries(estop_dev PUBLIC
 	pico_stdlib		  # Pico SDK Standard Library
 	pico_stdio_usb
 	pico_rand
@@ -53,4 +53,4 @@ target_link_libraries(estop PUBLIC
 	rfm95
 )
 
-target_compile_features(estop PUBLIC cxx_std_23)
+target_compile_features(estop_dev PUBLIC cxx_std_23)

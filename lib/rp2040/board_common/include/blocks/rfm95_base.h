@@ -1,0 +1,7 @@
+#ifndef BLOCKS__RFM95_BASE_H_
+#define BLOCKS__RFM95_BASE_H_
+
+#define RADIO_FREQ_MHZ 915.0
+#define RADIO_SPI_FREQ 2000 * 2000
+
+#endif
