@@ -28,8 +28,8 @@
 // rfm radio for estop communication
 rfm9x_t radio;
 
-bool power_channel_restart_active =
-    false; // Flag to indicate if a channel restart is currently active
+// Flag to indicate if a channel restart is currently active
+bool power_channel_restart_active = false; 
 
 // Initialize all to nil time
 // For background timers, they will fire immediately
@@ -139,6 +139,19 @@ static void tick_background_tasks() {
   }
 }
 
+static void handle_radio_packets(uint8_t packet_buffer[]){
+  uint8_t id = packet_buffer[0];
+  uint8_t stop_request = packet_buffer[1];
+  if (stop_request > 0) {
+    led_ros_connected_set(true);
+    set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
+  }
+  else {
+    led_ros_connected_set(false);
+    set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
+  }
+}
+
 int main() {
   // Initialize stdio
   stdio_init_all();
@@ -153,6 +166,8 @@ int main() {
   async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
   ads7828_init();
 
+
+  // Now pull up the GPIO
   gpio_init(PACK1_ACTIVE_PIN);
   gpio_set_dir(PACK1_ACTIVE_PIN, GPIO_IN);
 
@@ -175,13 +190,13 @@ int main() {
   gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
   gpio_put(NANO_PWR_CTL_PIN, 1);
 
-  // ~~~~~ Configure Radio ~~~~~ //
+  // Prepare the radio connection
   spi_init(spi1, 2000 * 2000);
   spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
   gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
   gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
   gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
-
+  
   if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, 915000000)) {
     LOG_INFO("Radio initialization failed!\n");
     return -1;
@@ -258,16 +273,7 @@ int main() {
     int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer),
                                  true, false, false, 100);
     if (received > 0) {
-      uint8_t id = packet_buffer[0];
-      uint8_t stop_request = packet_buffer[1];
-      if (stop_request > 0) {
-        led_ros_connected_set(true);
-        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
-      }
-      else {
-        led_ros_connected_set(false);
-        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
-      }
+      handle_radio_packets(packet_buffer);
     }
 
     // Tick safety
