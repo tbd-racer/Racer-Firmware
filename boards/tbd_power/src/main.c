@@ -1,13 +1,11 @@
-#include "driver/ads7828.h"
-#include "pico/stdlib.h"
-// #include "driver/canbus.h" CRH: USB transport is used instead of CAN
-#include "driver/led.h"
-// #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead
-// of CAN
 #include <chassis_msgs/srv/restart_power_channel.h>
 
+#include "driver/ads7828.h"
+#include "driver/canbus.h"
+#include "driver/led.h"
 #include "driver/rfm9x.h"
-#include "micro_ros_pico/transport_usb.h"
+#include "micro_ros_pico/transport_can.h"
+#include "pico/stdlib.h"
 #include "ros.h"
 #include "safety_interface.h"
 #include "titan/logger.h"
@@ -121,13 +119,11 @@ static void tick_ros_tasks() {
 }
 
 static void tick_background_tasks() {
-    // canbus_tick(); CRH: USB transport is used instead of CAN
-
-    // CRH: USB transport is used instead of CAN
-    // if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
-    //     // update the RGB led
-    //     led_network_online_set(canbus_check_online());
-    // }
+    canbus_tick();
+    if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+        // update the RGB led
+        led_network_online_set(canbus_check_online());
+    }
 
     // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
     if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
@@ -142,10 +138,8 @@ static void handle_radio_packets(uint8_t packet_buffer[]) {
     uint8_t id = packet_buffer[0];
     uint8_t stop_request = packet_buffer[1];
     if (stop_request > 0) {
-        led_ros_connected_set(true);
         set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
     } else {
-        led_ros_connected_set(false);
         set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
     }
 }
@@ -208,13 +202,11 @@ int main() {
     sleep_ms(1000);
     safety_tick();
 
-    // if (!transport_can_init(CAN_BUS_CLIENT_ID)) { CRH: USB transport is used
-    // instead of CAN
-    //     // No point in continuing onwards from here, if we can't initialize CAN
-    //     hardware might as well panic and retry panic("Failed to initialize CAN
-    //     bus hardware!");
-    // }
-    transport_usb_init();  // CRH: USB transport is used instead of CAN
+    if (!transport_can_init(CAN_BUS_CLIENT_ID)) {
+        // No point in continuing onwards from here, if we can't initialize CAN
+        // hardware might as well panic and retry
+        panic("Failed to initialize CAN bus hardware!");
+    }
 
     // Enter main loop
     // This is split into two sections of timers
