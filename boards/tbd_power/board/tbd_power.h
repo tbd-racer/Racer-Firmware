@@ -20,16 +20,16 @@
 // Standard GPIO
 #define PACK1_ACTIVE_PIN 0
 #define PACK2_ACTIVE_PIN 1
-#define AGX_PWR_CTL_PIN 2
+#define AGX_PWR_CTL_PIN  2
 #define LIDR_PWR_CTL_PIN 3
-#define NET_PWR_CTL_PIN 4
+#define NET_PWR_CTL_PIN  4
 #define NANO_PWR_CTL_PIN 5
 
 // Radio pins
-#define RADIO_NCS_PIN 7
+#define RADIO_NCS_PIN  7
 #define RADIO_MISO_PIN 8
-#define RADIO_RST_PIN 9
-#define RADIO_SCK_PIN 10
+#define RADIO_RST_PIN  9
+#define RADIO_SCK_PIN  10
 #define RADIO_MOSI_PIN 11
 #define RADIO_SPI_INST 1
 
