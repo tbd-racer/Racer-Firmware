@@ -1,46 +1,46 @@
 #ifndef ROS_H
 #define ROS_H
 
-#include "driver/bq40z80.h"
-#include "safety_interface.h"
-
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
 #include <rclc/rclc.h>
 #include <rmw_microros/rmw_microros.h>
 
-#define RCRETCHECK(fn)                                                                                                 \
-    {                                                                                                                  \
-        rcl_ret_t temp_rc = fn;                                                                                        \
-        if ((temp_rc != RCL_RET_OK)) {                                                                                 \
-            LOG_ERROR("Failed status on in " __FILE__ ":%d : %d. Aborting.", __LINE__, (int) temp_rc);                 \
-            safety_raise_fault(FAULT_ROS_ERROR);                                                     \
-            return temp_rc;                                                                                            \
-        }                                                                                                              \
+#include "driver/bq40z80.h"
+#include "safety_interface.h"
+
+#define RCRETCHECK(fn)                                                                                \
+    {                                                                                                 \
+        rcl_ret_t temp_rc = fn;                                                                       \
+        if ((temp_rc != RCL_RET_OK)) {                                                                \
+            LOG_ERROR("Failed status on in " __FILE__ ":%d : %d. Aborting.", __LINE__, (int)temp_rc); \
+            safety_raise_fault(FAULT_ROS_ERROR);                                                      \
+            return temp_rc;                                                                           \
+        }                                                                                             \
     }
-#define RCSOFTRETCHECK(fn)                                                                                             \
-    {                                                                                                                  \
-        rcl_ret_t temp_rc = fn;                                                                                        \
-        if ((temp_rc != RCL_RET_OK)) {                                                                                 \
-            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int) temp_rc);               \
-            return temp_rc;                                                                                            \
-        }                                                                                                              \
+#define RCSOFTRETCHECK(fn)                                                                              \
+    {                                                                                                   \
+        rcl_ret_t temp_rc = fn;                                                                         \
+        if ((temp_rc != RCL_RET_OK)) {                                                                  \
+            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int)temp_rc); \
+            return temp_rc;                                                                             \
+        }                                                                                               \
     }
-#define RCSOFTRETVCHECK(fn)                                                                                            \
-    {                                                                                                                  \
-        rcl_ret_t temp_rc = fn;                                                                                        \
-        if ((temp_rc != RCL_RET_OK)) {                                                                                 \
-            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int) temp_rc);               \
-            return;                                                                                                    \
-        }                                                                                                              \
+#define RCSOFTRETVCHECK(fn)                                                                             \
+    {                                                                                                   \
+        rcl_ret_t temp_rc = fn;                                                                         \
+        if ((temp_rc != RCL_RET_OK)) {                                                                  \
+            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int)temp_rc); \
+            return;                                                                                     \
+        }                                                                                               \
     }
-#define RCSOFTCHECK(fn)                                                                                                \
-    {                                                                                                                  \
-        rcl_ret_t temp_rc = fn;                                                                                        \
-        if ((temp_rc != RCL_RET_OK)) {                                                                                 \
-            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int) temp_rc);               \
-        }                                                                                                              \
+#define RCSOFTCHECK(fn)                                                                                 \
+    {                                                                                                   \
+        rcl_ret_t temp_rc = fn;                                                                         \
+        if ((temp_rc != RCL_RET_OK)) {                                                                  \
+            LOG_DEBUG("Failed status on in " __FILE__ ":%d : %d. Continuing.", __LINE__, (int)temp_rc); \
+        }                                                                                               \
     }
 
 // ========================================

@@ -28,10 +28,9 @@
 
 #if !defined(LIB_TINYUSB_HOST) && !defined(LIB_TINYUSB_DEVICE)
 
-#include "tusb.h"
-
 #include "pico/stdio_usb/reset_interface.h"
 #include "pico/unique_id.h"
+#include "tusb.h"
 
 #define USBD_VID (0x2E8A)  // Raspberry Pi
 #define USBD_PID (0x000a)  // Raspberry Pi Pico SDK CDC
@@ -89,9 +88,9 @@ static const tusb_desc_device_t usbd_desc_device = {
     .bNumConfigurations = 1,
 };
 
-#define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                                                                     \
-    /* Interface */                                                                                                    \
-    9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC, RESET_INTERFACE_SUBCLASS,                       \
+#define TUD_RPI_RESET_DESCRIPTOR(_itfnum, _stridx)                                               \
+    /* Interface */                                                                              \
+    9, TUSB_DESC_INTERFACE, _itfnum, 0, 0, TUSB_CLASS_VENDOR_SPECIFIC, RESET_INTERFACE_SUBCLASS, \
         RESET_INTERFACE_PROTOCOL, _stridx,
 
 static const uint8_t usbd_desc_cfg[USBD_DESC_LEN] = {
@@ -122,13 +121,9 @@ static const char *const usbd_desc_str[] = {
 #endif
 };
 
-const uint8_t *tud_descriptor_device_cb(void) {
-    return (const uint8_t *) &usbd_desc_device;
-}
+const uint8_t *tud_descriptor_device_cb(void) { return (const uint8_t *)&usbd_desc_device; }
 
-const uint8_t *tud_descriptor_configuration_cb(__unused uint8_t index) {
-    return usbd_desc_cfg;
-}
+const uint8_t *tud_descriptor_configuration_cb(__unused uint8_t index) { return usbd_desc_cfg; }
 
 const uint16_t *tud_descriptor_string_cb(uint8_t index, __unused uint16_t langid) {
 #define DESC_STR_MAX (20)
@@ -143,8 +138,7 @@ const uint16_t *tud_descriptor_string_cb(uint8_t index, __unused uint16_t langid
     if (index == 0) {
         desc_str[1] = 0x0409;  // supported language is English
         len = 1;
-    }
-    else {
+    } else {
         if (index >= sizeof(usbd_desc_str) / sizeof(usbd_desc_str[0])) {
             return NULL;
         }
@@ -155,7 +149,7 @@ const uint16_t *tud_descriptor_string_cb(uint8_t index, __unused uint16_t langid
     }
 
     // first byte is length (including header), second byte is string type
-    desc_str[0] = (uint16_t) ((TUSB_DESC_STRING << 8) | (2 * len + 2));
+    desc_str[0] = (uint16_t)((TUSB_DESC_STRING << 8) | (2 * len + 2));
 
     return desc_str;
 }

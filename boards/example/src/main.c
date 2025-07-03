@@ -1,8 +1,7 @@
-#include "pico/stdlib.h"
-
-#include "titan/version.h"
-#include "titan/logger.h"
 #include "driver/led.h"
+#include "pico/stdlib.h"
+#include "titan/logger.h"
+#include "titan/version.h"
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -12,7 +11,7 @@
 // Initialize all to nil time
 // For background timers, they will fire immediately
 // For ros timers, they will be reset before being ticked by start_ros_timers
-absolute_time_t next_event = {0};
+absolute_time_t next_event = { 0 };
 bool toggle = false;
 
 /**
@@ -43,22 +42,19 @@ static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bo
         }
         *next_fire_ptr = time_tmp;
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }
 
-
 static void tick_background_tasks() {
-    if(timer_ready(&next_event, EVENT_TIME, false)){
+    if (timer_ready(&next_event, EVENT_TIME, false)) {
         toggle = !toggle;
         led_network_online_set(toggle);
 
         // do something
         led_update_pins();
     }
-
 }
 
 int main() {
@@ -70,9 +66,9 @@ int main() {
     led_fault_set(false);
     led_network_enabled_set(true);
     led_network_online_set(true);
-    
+
     // Enter main loop
-    while(true) {
+    while (true) {
         // Do background tasks
         tick_background_tasks();
     }

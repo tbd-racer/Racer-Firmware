@@ -7,8 +7,8 @@
 #ifndef _PICO_TIME_H
 #define _PICO_TIME_H
 
-#include "pico.h"
 #include "hardware/timer.h"
+#include "pico.h"
 
 /** \file time.h
  *  \defgroup pico_time pico_time
@@ -30,8 +30,8 @@
  *  \ingroup pico_time
  * \brief Timestamp functions relating to points in time (including the current time)
  *
- * These are functions for dealing with timestamps (i.e. instants in time) represented by the type absolute_time_t. This opaque
- * type is provided to help prevent accidental mixing of timestamps and relative time values.
+ * These are functions for dealing with timestamps (i.e. instants in time) represented by the type absolute_time_t. This
+ * opaque type is provided to help prevent accidental mixing of timestamps and relative time values.
  */
 
 /*! \brief Return a representation of the current time.
@@ -113,9 +113,7 @@ static inline absolute_time_t delayed_by_ms(const absolute_time_t t, uint32_t ms
  * \param us the number of microseconds to add to the current timestamp
  * \return the future timestamp
  */
-static inline absolute_time_t make_timeout_time_us(uint64_t us) {
-    return delayed_by_us(get_absolute_time(), us);
-}
+static inline absolute_time_t make_timeout_time_us(uint64_t us) { return delayed_by_us(get_absolute_time(), us); }
 
 /*! \brief Convenience method to get the timestamp a number of milliseconds from the current time
  * \ingroup timestamp
@@ -123,9 +121,7 @@ static inline absolute_time_t make_timeout_time_us(uint64_t us) {
  * \param ms the number of milliseconds to add to the current timestamp
  * \return the future timestamp
  */
-static inline absolute_time_t make_timeout_time_ms(uint32_t ms) {
-    return delayed_by_ms(get_absolute_time(), ms);
-}
+static inline absolute_time_t make_timeout_time_ms(uint32_t ms) { return delayed_by_ms(get_absolute_time(), ms); }
 
 /*! \brief Return the difference in microseconds between two timestamps
  * \ingroup timestamp
@@ -160,8 +156,6 @@ extern const absolute_time_t nil_time;
  *  \return true if the timestamp is nil
  *  \sa nil_time
  */
-static inline bool is_nil_time(absolute_time_t t) {
-    return !to_us_since_boot(t);
-}
+static inline bool is_nil_time(absolute_time_t t) { return !to_us_since_boot(t); }
 
 #endif

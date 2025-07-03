@@ -1,10 +1,11 @@
 #ifndef RFM9X_H
 #define RFM9X_H
 
-#include "hardware/gpio.h"
-#include "hardware/spi.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "hardware/gpio.h"
+#include "hardware/spi.h"
 
 // Internal constants - Register names
 #define RH_RF95_REG_00_FIFO 0x00
@@ -61,56 +62,55 @@
 
 // Bandwidth bins
 typedef enum {
-  BW_7_8_KHZ = 0,
-  BW_10_4_KHZ,
-  BW_15_6_KHZ,
-  BW_20_8_KHZ,
-  BW_31_25_KHZ,
-  BW_41_7_KHZ,
-  BW_62_5_KHZ,
-  BW_125_KHZ,
-  BW_250_KHZ,
-  BW_500_KHZ
+    BW_7_8_KHZ = 0,
+    BW_10_4_KHZ,
+    BW_15_6_KHZ,
+    BW_20_8_KHZ,
+    BW_31_25_KHZ,
+    BW_41_7_KHZ,
+    BW_62_5_KHZ,
+    BW_125_KHZ,
+    BW_250_KHZ,
+    BW_500_KHZ
 } rfm9x_bandwidth_t;
 
 // RFM9x configuration structure
 typedef struct {
-  spi_inst_t *spi;
-  uint cs_pin;
-  uint reset_pin;
-  uint32_t frequency_hz;
-  uint16_t preamble_length;
-  bool high_power;
-  uint32_t baudrate;
-  bool auto_agc;
-  bool enable_crc;
+    spi_inst_t *spi;
+    uint cs_pin;
+    uint reset_pin;
+    uint32_t frequency_hz;
+    uint16_t preamble_length;
+    bool high_power;
+    uint32_t baudrate;
+    bool auto_agc;
+    bool enable_crc;
 
-  // RadioHead compatibility
-  uint8_t node;
-  uint8_t destination;
-  uint8_t identifier;
-  uint8_t flags;
-  uint8_t sequence_number;
+    // RadioHead compatibility
+    uint8_t node;
+    uint8_t destination;
+    uint8_t identifier;
+    uint8_t flags;
+    uint8_t sequence_number;
 
-  // Timeouts and delays
-  float ack_wait;
-  float receive_timeout;
-  float xmit_timeout;
-  uint8_t ack_retries;
-  float ack_delay;
+    // Timeouts and delays
+    float ack_wait;
+    float receive_timeout;
+    float xmit_timeout;
+    uint8_t ack_retries;
+    float ack_delay;
 
-  // Statistics
-  float last_rssi;
-  float last_snr;
-  uint16_t crc_error_count;
+    // Statistics
+    float last_rssi;
+    float last_snr;
+    uint16_t crc_error_count;
 
-  // Internal state
-  uint8_t seen_ids[256];
+    // Internal state
+    uint8_t seen_ids[256];
 } rfm9x_t;
 
 // Function declarations
-bool rfm9x_init(rfm9x_t *rfm, spi_inst_t *spi, uint cs_pin, uint reset_pin,
-                uint32_t frequency_hz);
+bool rfm9x_init(rfm9x_t *rfm, spi_inst_t *spi, uint cs_pin, uint reset_pin, uint32_t frequency_hz);
 void rfm9x_reset(rfm9x_t *rfm);
 void rfm9x_sleep(rfm9x_t *rfm);
 void rfm9x_idle(rfm9x_t *rfm);
@@ -120,10 +120,8 @@ void rfm9x_transmit(rfm9x_t *rfm);
 // Register access functions
 uint8_t rfm9x_read_u8(rfm9x_t *rfm, uint8_t address);
 void rfm9x_write_u8(rfm9x_t *rfm, uint8_t address, uint8_t value);
-void rfm9x_read_into(rfm9x_t *rfm, uint8_t address, uint8_t *buffer,
-                     size_t length);
-void rfm9x_write_from(rfm9x_t *rfm, uint8_t address, const uint8_t *buffer,
-                      size_t length);
+void rfm9x_read_into(rfm9x_t *rfm, uint8_t address, uint8_t *buffer, size_t length);
+void rfm9x_write_from(rfm9x_t *rfm, uint8_t address, const uint8_t *buffer, size_t length);
 
 // Property getters/setters
 void rfm9x_set_frequency_mhz(rfm9x_t *rfm, float frequency_mhz);
@@ -145,11 +143,9 @@ int rfm9x_get_rssi(rfm9x_t *rfm);
 float rfm9x_get_snr(rfm9x_t *rfm);
 
 // Communication functions
-bool rfm9x_send(rfm9x_t *rfm, const uint8_t *data, size_t length,
-                bool keep_listening);
+bool rfm9x_send(rfm9x_t *rfm, const uint8_t *data, size_t length, bool keep_listening);
 bool rfm9x_send_with_ack(rfm9x_t *rfm, const uint8_t *data, size_t length);
-int rfm9x_receive(rfm9x_t *rfm, uint8_t *buffer, size_t buffer_size,
-                  bool keep_listening, bool with_header, bool with_ack,
-                  uint32_t timeout_ms);
+int rfm9x_receive(rfm9x_t *rfm, uint8_t *buffer, size_t buffer_size, bool keep_listening, bool with_header,
+                  bool with_ack, uint32_t timeout_ms);
 
-#endif // RFM9X_H
+#endif  // RFM9X_H

@@ -2,9 +2,9 @@
 #define CAN_BL_CUSTOM_ID__SBH_MCU_H
 
 #include <stdint.h>
-#include "hardware/regs/addressmap.h"
 
 #include "hardware/flash.h"
+#include "hardware/regs/addressmap.h"
 
 // Determine client ID by the board detect pin
 static bool bl_board_get_client_id(int *client_id) {
@@ -17,6 +17,5 @@ static bool bl_board_get_client_id(int *client_id) {
     *client_id = data[0];
     return true;
 }
-
 
 #endif

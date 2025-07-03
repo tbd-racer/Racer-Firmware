@@ -1,13 +1,12 @@
 #include "driver/status_strip.h"
 
-#include "ws2812.pio.h"
-
 #include "hardware/dma.h"
 #include "pico/sync.h"
 #include "pico/time.h"
+#include "ws2812.pio.h"
 
 #define LED_UPDATE_INTERVAL_MS 50
-#define LED_TIMER_PERIOD_TICKS                                                                                         \
+#define LED_TIMER_PERIOD_TICKS \
     120  // Note this should be less than 256 to avoid multiplication overflows and divisible by 2
 #define LED_FAST_FLASH_PERIOD 6   // This should be divisible by 2 and LED_TIMER_PERIOD_TICKS divisible by this
 #define LED_SLOW_FLASH_PERIOD 40  // This should be divisible by 2 and LED_TIMER_PERIOD_TICKS divisible by this
@@ -21,9 +20,9 @@ static_assert(NUM_LEDS % 4 == 0, "Number of LEDs must be divisible by 4");
 
 // Startup flashing configuation
 #define STARTUP_TICK_DURATION 2  // Number of LED updates between each startup tick
-#define STARTUP_COLOR_CODE                                                                                             \
-    ((10 << 24) |  /* Green */                                                                                         \
-     (255 << 16) | /* Red */                                                                                           \
+#define STARTUP_COLOR_CODE     \
+    ((10 << 24) |  /* Green */ \
+     (255 << 16) | /* Red */   \
      (0 << 8))     /* Blue */
 
 enum startup_phase {
@@ -110,8 +109,7 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
                 if ((inst->startup_flash_phase == 0) ^ inst->first_pixel_is_rear) {
                     inst->middle_cmd.data = STARTUP_COLOR_CODE;
                     inst->end_cmd.data = 0;
-                }
-                else {
+                } else {
                     inst->middle_cmd.data = 0;
                     inst->end_cmd.data = STARTUP_COLOR_CODE;
                 }
@@ -125,8 +123,7 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
                     inst->control_blocks[0].len = inst->startup_flash_index;
                     inst->control_blocks[1].len = NUM_LEDS - (inst->startup_flash_index * 2);
                     inst->control_blocks[2].len = inst->startup_flash_index;
-                }
-                else {
+                } else {
                     // So the middle count is the number of pixels in the rear * 2
                     inst->control_blocks[0].len = (NUM_LEDS / 2) - inst->startup_flash_index;
                     inst->control_blocks[1].len = inst->startup_flash_index * 2;
@@ -138,8 +135,7 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
                     inst->startup_flash_index = 0;
                     inst->startup_flash_phase++;
                 }
-            }
-            else if (inst->startup_flash_phase == STARTUP_PHASE_FULL) {
+            } else if (inst->startup_flash_phase == STARTUP_PHASE_FULL) {
                 // Set strip to all-on with startup color
                 inst->control_blocks[0].len = NUM_LEDS / 4;
                 inst->control_blocks[1].len = NUM_LEDS / 2;
@@ -148,8 +144,7 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
                 inst->end_cmd.data = STARTUP_COLOR_CODE;
 
                 inst->startup_flash_phase++;
-            }
-            else if (inst->startup_flash_phase == STARTUP_PHASE_RESET_DMA) {
+            } else if (inst->startup_flash_phase == STARTUP_PHASE_RESET_DMA) {
                 inst->control_blocks[0].len = NUM_LEDS / 4;
                 inst->control_blocks[1].len = NUM_LEDS / 2;
                 inst->control_blocks[2].len = NUM_LEDS / 4;
@@ -170,45 +165,40 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
             command.cmd.red = inst->red_target;
             command.cmd.green = inst->green_target;
             command.cmd.blue = inst->blue_target;
-        }
-        else if (inst->mode == STATUS_STRIP_MODE_FAST_FLASH || inst->mode == STATUS_STRIP_MODE_SLOW_FLASH) {
+        } else if (inst->mode == STATUS_STRIP_MODE_FAST_FLASH || inst->mode == STATUS_STRIP_MODE_SLOW_FLASH) {
             uint flash_period =
                 (inst->mode == STATUS_STRIP_MODE_FAST_FLASH ? LED_FAST_FLASH_PERIOD : LED_SLOW_FLASH_PERIOD);
             if (inst->timer % flash_period < (flash_period / 2)) {
                 command.cmd.red = inst->red_target;
                 command.cmd.green = inst->green_target;
                 command.cmd.blue = inst->blue_target;
-            }
-            else {
+            } else {
                 // Set blank
                 command.data = 0;
             }
-        }
-        else if (inst->mode == STATUS_STRIP_MODE_BREATH) {
+        } else if (inst->mode == STATUS_STRIP_MODE_BREATH) {
             if (inst->timer % LED_TIMER_PERIOD_TICKS < (LED_TIMER_PERIOD_TICKS / 2)) {
                 // Handle rising fade
-                command.cmd.red = (((uint32_t) inst->red_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
-                command.cmd.green = (((uint32_t) inst->green_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
-                command.cmd.blue = (((uint32_t) inst->blue_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
-            }
-            else {
+                command.cmd.red = (((uint32_t)inst->red_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
+                command.cmd.green = (((uint32_t)inst->green_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
+                command.cmd.blue = (((uint32_t)inst->blue_target) * inst->timer) / (LED_TIMER_PERIOD_TICKS / 2);
+            } else {
                 // Handle falling fade
                 command.cmd.red =
-                    (inst->red_target) - (((uint32_t) inst->red_target) * (inst->timer - (LED_TIMER_PERIOD_TICKS / 2)) /
+                    (inst->red_target) - (((uint32_t)inst->red_target) * (inst->timer - (LED_TIMER_PERIOD_TICKS / 2)) /
                                           (LED_TIMER_PERIOD_TICKS / 2));
                 command.cmd.green = (inst->green_target) -
-                                    (((uint32_t) inst->green_target) * (inst->timer - (LED_TIMER_PERIOD_TICKS / 2)) /
+                                    (((uint32_t)inst->green_target) * (inst->timer - (LED_TIMER_PERIOD_TICKS / 2)) /
                                      (LED_TIMER_PERIOD_TICKS / 2));
                 command.cmd.blue =
-                    (inst->blue_target) - (((uint32_t) inst->blue_target) *
+                    (inst->blue_target) - (((uint32_t)inst->blue_target) *
                                            (inst->timer - (LED_TIMER_PERIOD_TICKS / 2)) / (LED_TIMER_PERIOD_TICKS / 2));
             }
             // Square it to make fading look smoother
-            command.cmd.red = (((uint32_t) command.cmd.red) * ((uint32_t) command.cmd.red)) >> 8;
-            command.cmd.green = (((uint32_t) command.cmd.green) * ((uint32_t) command.cmd.green)) >> 8;
-            command.cmd.blue = (((uint32_t) command.cmd.blue) * ((uint32_t) command.cmd.blue)) >> 8;
-        }
-        else {
+            command.cmd.red = (((uint32_t)command.cmd.red) * ((uint32_t)command.cmd.red)) >> 8;
+            command.cmd.green = (((uint32_t)command.cmd.green) * ((uint32_t)command.cmd.green)) >> 8;
+            command.cmd.blue = (((uint32_t)command.cmd.blue) * ((uint32_t)command.cmd.blue)) >> 8;
+        } else {
             command.data = 0;
         }
         inst->timer = (inst->timer + 1) % LED_TIMER_PERIOD_TICKS;  // Tick the timer
@@ -221,24 +211,23 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
             if (inst->flash_timer % LED_FLASH_PULSE_PERIOD < (LED_FLASH_PULSE_PERIOD / 2)) {
                 // Handle rising fade
                 flash_command.cmd.red =
-                    (((uint32_t) inst->red_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
+                    (((uint32_t)inst->red_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
                 flash_command.cmd.green =
-                    (((uint32_t) inst->green_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
+                    (((uint32_t)inst->green_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
                 flash_command.cmd.blue =
-                    (((uint32_t) inst->blue_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
-            }
-            else {
+                    (((uint32_t)inst->blue_flash_target) * inst->flash_timer) / (LED_FLASH_PULSE_PERIOD / 2);
+            } else {
                 // Handle falling fade
-                flash_command.cmd.red = (inst->red_flash_target) - (((uint32_t) inst->red_flash_target) *
+                flash_command.cmd.red = (inst->red_flash_target) - (((uint32_t)inst->red_flash_target) *
                                                                     (inst->flash_timer - (LED_FLASH_PULSE_PERIOD / 2)) /
                                                                     (LED_FLASH_PULSE_PERIOD / 2));
                 flash_command.cmd.green =
                     (inst->green_flash_target) -
-                    (((uint32_t) inst->green_flash_target) * (inst->flash_timer - (LED_FLASH_PULSE_PERIOD / 2)) /
+                    (((uint32_t)inst->green_flash_target) * (inst->flash_timer - (LED_FLASH_PULSE_PERIOD / 2)) /
                      (LED_FLASH_PULSE_PERIOD / 2));
                 flash_command.cmd.blue =
                     (inst->blue_flash_target) -
-                    (((uint32_t) inst->blue_flash_target) * (inst->flash_timer - (LED_FLASH_PULSE_PERIOD / 2)) /
+                    (((uint32_t)inst->blue_flash_target) * (inst->flash_timer - (LED_FLASH_PULSE_PERIOD / 2)) /
                      (LED_FLASH_PULSE_PERIOD / 2));
             }
 
@@ -255,8 +244,7 @@ bool __time_critical_func(status_strip_refresh)(__unused repeating_timer_t *rt) 
             // Finally update the LEDs
             inst->end_cmd.data = flash_command.data;
             inst->middle_cmd.data = flash_command.data;
-        }
-        else {
+        } else {
             inst->end_cmd.data = command.data;
             inst->middle_cmd.data = command.data;
         }
@@ -362,10 +350,6 @@ void status_strip_status_flash(uint8_t red, uint8_t green, uint8_t blue) {
     inst->flash_active = true;
 }
 
-void status_strip_enable(void) {
-    inst->enabled = true;
-}
+void status_strip_enable(void) { inst->enabled = true; }
 
-void status_strip_disable(void) {
-    inst->enabled = false;
-}
+void status_strip_disable(void) { inst->enabled = false; }

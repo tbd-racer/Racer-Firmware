@@ -1,12 +1,12 @@
 #include "driver/led.h"
 
+#include <stdbool.h>
+
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 #include "pico/binary_info.h"
 #include "pico/time.h"
-
-#include <stdbool.h>
 
 /**
  * @brief Rate at which the normal LED value and fault value alternates between
@@ -39,7 +39,7 @@ void led_init() {
 
     // Set clkdiv to tick once per millisecond (assert clock is disible cleanly into ms)
     // and for the cycle to rollover after blink cycle ms
-    pwm_config_set_clkdiv(&config, ((float) clock_get_hz(clk_sys)) / (LED_FREQUENCY_HZ * LED_BRIGHTNESS_STEPS));
+    pwm_config_set_clkdiv(&config, ((float)clock_get_hz(clk_sys)) / (LED_FREQUENCY_HZ * LED_BRIGHTNESS_STEPS));
     pwm_config_set_wrap(&config, LED_BRIGHTNESS_STEPS - 1);
 
     // Invert the output polarity as this is an RGB led so it will have inverted logic levels
@@ -85,8 +85,9 @@ void led_init() {
 }
 
 void led_update_pins() {
-    if (!status.initialized)
+    if (!status.initialized) {
         return;
+    }
 
     // Color Calculation:
     // 1. Kill switch inserted: Blue
@@ -107,23 +108,19 @@ void led_update_pins() {
             set_led_pin(STATUS_LEDR_PIN, LED_LVL_ON);
             set_led_pin(STATUS_LEDG_PIN, LED_LVL_OFF);
             set_led_pin(STATUS_LEDB_PIN, LED_LVL_OFF);
-        }
-        else {
+        } else {
             uint16_t r = LED_LVL_OFF;
             uint16_t g = LED_LVL_OFF;
             uint16_t b = LED_LVL_OFF;
 
             if (status.killswitch) {
                 b = LED_LVL_ON;
-            }
-            else if (status.ros_connected) {
+            } else if (status.ros_connected) {
                 g = LED_LVL_ON;
-            }
-            else if (status.network_online) {
+            } else if (status.network_online) {
                 r = LED_LVL_ON;
                 g = LED_LVL_YELLOW;
-            }
-            else if (status.network_enabled) {
+            } else if (status.network_enabled) {
                 r = LED_LVL_ON;
             }
             // If network disabled, LED is off
@@ -139,34 +136,39 @@ void led_update_pins() {
 void led_fault_set(bool value) {
     status.fault = value;
 
-    if (status.initialized)
+    if (status.initialized) {
         led_update_pins();
+    }
 }
 
 void led_network_online_set(bool value) {
     status.network_online = value;
 
-    if (status.initialized)
+    if (status.initialized) {
         led_update_pins();
+    }
 }
 
 void led_ros_connected_set(bool value) {
     status.ros_connected = value;
 
-    if (status.initialized)
+    if (status.initialized) {
         led_update_pins();
+    }
 }
 
 void led_killswitch_set(bool value) {
     status.killswitch = value;
 
-    if (status.initialized)
+    if (status.initialized) {
         led_update_pins();
+    }
 }
 
 void led_network_enabled_set(bool value) {
     status.network_enabled = value;
 
-    if (status.initialized)
+    if (status.initialized) {
         led_update_pins();
+    }
 }

@@ -1,12 +1,11 @@
+#include "bl_interface.h"
+#include "bl_server.h"
+#include "boot_app.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
 #include "pico/time.h"
 
-#include "boot_app.h"
-#include "bl_interface.h"
-#include "bl_server.h"
-
-#define RGB_MASK ((1<<STATUS_LEDR_PIN) | (1<<STATUS_LEDG_PIN) | (1<<STATUS_LEDB_PIN))
+#define RGB_MASK ((1 << STATUS_LEDR_PIN) | (1 << STATUS_LEDG_PIN) | (1 << STATUS_LEDB_PIN))
 
 #define WATCHDOG_TIMEOUT_MS 3000
 #define LINK_DELAY_MS 5000
@@ -14,10 +13,10 @@
 #define BOOTLOADER_TIMEOUT_SEC 30
 
 void tick_led(void) {
-    static absolute_time_t next_update = {0};
+    static absolute_time_t next_update = { 0 };
     static unsigned int led_state = 0;
     if (time_reached(next_update)) {
-        gpio_put(STATUS_LEDG_PIN, (led_state+1) % 2);
+        gpio_put(STATUS_LEDG_PIN, (led_state + 1) % 2);
 
         led_state++;
         if (led_state == 10) {
@@ -30,7 +29,7 @@ void tick_led(void) {
 }
 
 void tick_heartbeat(void) {
-    static absolute_time_t next_update = {0};
+    static absolute_time_t next_update = { 0 };
     if (time_reached(next_update)) {
         next_update = make_timeout_time_ms(500);
         bl_interface_heartbeat();
@@ -68,10 +67,8 @@ int main(void) {
     if (watchdog_hw->scratch[4] == 0xb00710ad) {
         enter_bootloader = true;
         watchdog_hw->scratch[4] = 0;
-    }
-    else if ((watchdog_caused_reboot() &&
-                watchdog_hw->scratch[4] == WATCHDOG_BOOTLOADER_NON_REBOOT_MAGIC) ||
-            watchdog_enable_caused_reboot()) {
+    } else if ((watchdog_caused_reboot() && watchdog_hw->scratch[4] == WATCHDOG_BOOTLOADER_NON_REBOOT_MAGIC) ||
+               watchdog_enable_caused_reboot()) {
         notify_watchdog_reset = true;
     }
 

@@ -7,8 +7,8 @@
 #ifndef _HARDWARE_CLOCKS_H
 #define _HARDWARE_CLOCKS_H
 
-#include "pico.h"
 #include "hardware/structs/clocks.h"
+#include "pico.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,15 +21,19 @@ extern "C" {
  *
  * This API provides a high level interface to the clock functions.
  *
- * The clocks block provides independent clocks to on-chip and external components. It takes inputs from a variety of clock
+ * The clocks block provides independent clocks to on-chip and external components. It takes inputs from a variety of
+ clock
  * sources allowing the user to trade off performance against cost, board area and power consumption. From these sources
- * it uses multiple clock generators to provide the required clocks. This architecture allows the user flexibility to start and
+ * it uses multiple clock generators to provide the required clocks. This architecture allows the user flexibility to
+ start and
  * stop clocks independently and to vary some clock frequencies whilst maintaining others at their optimum frequencies
  *
  * Please refer to the appropriate datasheet for more details on the RP-series clocks.
  *
- * The clock source depends on which clock you are attempting to configure. The first table below shows main clock sources. If
- * you are not setting the Reference clock or the System clock, or you are specifying that one of those two will be using an auxiliary
+ * The clock source depends on which clock you are attempting to configure. The first table below shows main clock
+ sources. If
+ * you are not setting the Reference clock or the System clock, or you are specifying that one of those two will be
+ using an auxiliary
  * clock source, then you will need to use one of the entries from the subsequent tables.
  *
  * * \if rp2040_specific
@@ -46,18 +50,25 @@ extern "C" {
  *
  * **Auxiliary Clock Sources**
  *
- * The auxiliary clock sources available for use in the configure function depend on which clock is being configured. The following table
+ * The auxiliary clock sources available for use in the configure function depend on which clock is being configured.
+ The following table
  * describes the available values that can be used. Note that for clk_gpout[x], x can be 0-3.
  *
  *
  * Aux Source | clk_gpout[x] | clk_ref | clk_sys
  * -----------|------------|---------|--------
- * System PLL | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
- * GPIO in 0  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0  | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
- * GPIO in 1  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1  | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
- * USB PLL    | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB| CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
- * ROSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_ROSC_CLKSRC    |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_ROSC_CLKSRC
- * XOSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
+ * System PLL | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
+ * GPIO in 0  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0  |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
+ * GPIO in 1  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1  |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
+ * USB PLL    | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB|
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
+ * ROSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_ROSC_CLKSRC    |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_ROSC_CLKSRC
+ * XOSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
  * System clock | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLK_SYS      | | |
  * USB Clock  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLK_USB        | | |
  * ADC clock  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLK_ADC        | | |
@@ -66,12 +77,18 @@ extern "C" {
  *
  * Aux Source |  clk_peri | clk_usb | clk_adc
  * -----------|-----------|---------|--------
- * System PLL | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
- * GPIO in 0  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0      | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
- * GPIO in 1  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1      | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
- * USB PLL    | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
- * ROSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH
- * XOSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_XOSC_CLKSRC       | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
+ * System PLL | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
+ * GPIO in 0  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0      | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
+ * GPIO in 1  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1      | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
+ * USB PLL    | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
+ * ROSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH    | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH
+ * XOSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_XOSC_CLKSRC       | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
  * System clock | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS         | | |
  *
  * Aux Source | clk_rtc
@@ -98,18 +115,25 @@ extern "C" {
  *
  * **Auxiliary Clock Sources**
  *
- * The auxiliary clock sources available for use in the configure function depend on which clock is being configured. The following table
+ * The auxiliary clock sources available for use in the configure function depend on which clock is being configured.
+ The following table
  * describes the available values that can be used. Note that for clk_gpout[x], x can be 0-3.
  *
  *
  * Aux Source | clk_gpout[x] | clk_ref | clk_sys
  * -----------|------------|---------|--------
- * System PLL | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
- * GPIO in 0  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0  | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
- * GPIO in 1  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1  | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
- * USB PLL    | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB| CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
- * ROSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_ROSC_CLKSRC    |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_ROSC_CLKSRC
- * XOSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    |                                                | CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
+ * System PLL | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
+ * GPIO in 0  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0  |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
+ * GPIO in 1  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1  |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
+ * USB PLL    | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_REF_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB|
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
+ * ROSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_ROSC_CLKSRC    |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_ROSC_CLKSRC
+ * XOSC       | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    |                                                |
+ CLOCKS_CLK_SYS_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
  * LPOSC      | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_LPOSC_CLKSRC   | | |
  * System clock | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLK_SYS      | | |
  * USB Clock  | CLOCKS_CLK_GPOUTx_CTRL_AUXSRC_VALUE_CLK_USB        | | |
@@ -121,12 +145,18 @@ extern "C" {
  *
  * Aux Source |  clk_peri | clk_hstx | clk_usb | clk_adc
  * -----------|-----------|----------|---------|--------
- * System PLL | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS    | CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
- * GPIO in 0  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0      |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0   | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
- * GPIO in 1  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1      |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1   | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
- * USB PLL    | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB    | CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
- * ROSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH    |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH
- * XOSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_XOSC_CLKSRC       |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_XOSC_CLKSRC    | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
+ * System PLL | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS    | CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS |
+ CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS
+ * GPIO in 0  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0      |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
+ | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0
+ * GPIO in 1  | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1      |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
+ | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1
+ * USB PLL    | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB    | CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB |
+ CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB
+ * ROSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH    |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH
+ | CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_ROSC_CLKSRC_PH
+ * XOSC       | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_XOSC_CLKSRC       |  | CLOCKS_CLK_USB_CTRL_AUXSRC_VALUE_XOSC_CLKSRC |
+ CLOCKS_CLK_ADC_CTRL_AUXSRC_VALUE_XOSC_CLKSRC
  * System clock | CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS         | CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLK_SYS | | |
  * \endif
 
@@ -145,8 +175,8 @@ extern "C" {
 // 2. The 'USB PLL' generates the USB clock, the frequency is defined by `USB_CLK_KHZ`.
 //
 // The two PLLs use the crystal oscillator output directly as their reference frequency input; the PLLs reference
-// frequency cannot be reduced by the dividers present in the clocks block. The crystal frequency is defined by `XOSC_HZ` (or
-// `XOSC_KHZ` or `XOSC_MHZ`).
+// frequency cannot be reduced by the dividers present in the clocks block. The crystal frequency is defined by
+// `XOSC_HZ` (or `XOSC_KHZ` or `XOSC_MHZ`).
 //
 // The system's default definitions are correct for the above frequencies with a 12MHz
 // crystal frequency.  If different frequencies are required, these must be defined in
@@ -169,93 +199,104 @@ extern "C" {
 #define PLL_COMMON_REFDIV 1
 #endif
 
-// PICO_CONFIG: PLL_SYS_REFDIV, PLL reference divider setting for PLL_SYS, type=int, default=1, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_SYS_REFDIV, PLL reference divider setting for PLL_SYS, type=int, default=1, advanced=true,
+// group=hardware_clocks
 #ifndef PLL_SYS_REFDIV
 // backwards compatibility with deprecated PLL_COMMON_REFDIV
 #ifdef PLL_COMMON_REFDIV
-#define PLL_SYS_REFDIV                   PLL_COMMON_REFDIV
+#define PLL_SYS_REFDIV PLL_COMMON_REFDIV
 #else
-#define PLL_SYS_REFDIV                   1
+#define PLL_SYS_REFDIV 1
 #endif
 #endif
 
 #ifndef PLL_SYS_VCO_FREQ_HZ
 // For backwards compatibility define PLL_SYS_VCO_FREQ_HZ if PLL_SYS_VCO_FREQ_KHZ is defined
 #ifdef PLL_SYS_VCO_FREQ_KHZ
-#define PLL_SYS_VCO_FREQ_HZ                (PLL_SYS_VCO_FREQ_KHZ * KHZ)
+#define PLL_SYS_VCO_FREQ_HZ (PLL_SYS_VCO_FREQ_KHZ * KHZ)
 #endif
 #endif
 
 #if (SYS_CLK_HZ == 125 * MHZ || SYS_CLK_HZ == 150 * MHZ) && (XOSC_HZ == 12 * MHZ) && (PLL_SYS_REFDIV == 1)
 // PLL settings for standard 125/150 MHz system clock.
-// PICO_CONFIG: PLL_SYS_VCO_FREQ_HZ, System clock PLL frequency, type=int, default=(1500 * MHZ), advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_SYS_VCO_FREQ_HZ, System clock PLL frequency, type=int, default=(1500 * MHZ), advanced=true,
+// group=hardware_clocks
 #ifndef PLL_SYS_VCO_FREQ_HZ
-#define PLL_SYS_VCO_FREQ_HZ                (1500 * MHZ)
+#define PLL_SYS_VCO_FREQ_HZ (1500 * MHZ)
 #endif
-// PICO_CONFIG: PLL_SYS_POSTDIV1, System clock PLL post divider 1 setting, type=int, default=6 on RP2040 or 5 on RP2350, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_SYS_POSTDIV1, System clock PLL post divider 1 setting, type=int, default=6 on RP2040 or 5 on RP2350,
+// advanced=true, group=hardware_clocks
 #ifndef PLL_SYS_POSTDIV1
 #if SYS_CLK_HZ == 125 * MHZ
-#define PLL_SYS_POSTDIV1                    6
+#define PLL_SYS_POSTDIV1 6
 #else
-#define PLL_SYS_POSTDIV1                    5
+#define PLL_SYS_POSTDIV1 5
 #endif
 #endif
-// PICO_CONFIG: PLL_SYS_POSTDIV2, System clock PLL post divider 2 setting, type=int, default=2, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_SYS_POSTDIV2, System clock PLL post divider 2 setting, type=int, default=2, advanced=true,
+// group=hardware_clocks
 #ifndef PLL_SYS_POSTDIV2
-#define PLL_SYS_POSTDIV2                    2
+#define PLL_SYS_POSTDIV2 2
 #endif
-#endif // SYS_CLK_KHZ == 125000 && XOSC_KHZ == 12000 && PLL_COMMON_REFDIV == 1
+#endif  // SYS_CLK_KHZ == 125000 && XOSC_KHZ == 12000 && PLL_COMMON_REFDIV == 1
 
 #if !defined(PLL_SYS_VCO_FREQ_HZ) || !defined(PLL_SYS_POSTDIV1) || !defined(PLL_SYS_POSTDIV2)
 #error PLL_SYS_VCO_FREQ_HZ, PLL_SYS_POSTDIV1 and PLL_SYS_POSTDIV2 must all be specified when using custom clock setup
 #endif
 
-// PICO_CONFIG: PLL_USB_REFDIV, PLL reference divider setting for PLL_USB, type=int, default=1, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_USB_REFDIV, PLL reference divider setting for PLL_USB, type=int, default=1, advanced=true,
+// group=hardware_clocks
 #ifndef PLL_USB_REFDIV
 // backwards compatibility with deprecated PLL_COMMON_REFDIV
 #ifdef PLL_COMMON_REFDIV
-#define PLL_USB_REFDIV                   PLL_COMMON_REFDIV
+#define PLL_USB_REFDIV PLL_COMMON_REFDIV
 #else
-#define PLL_USB_REFDIV                   1
+#define PLL_USB_REFDIV 1
 #endif
 #endif
 
 #ifndef PLL_USB_VCO_FREQ_HZ
 // For backwards compatibility define PLL_USB_VCO_FREQ_HZ if PLL_USB_VCO_FREQ_KHZ is defined
 #ifdef PLL_USB_VCO_FREQ_KHZ
-#define PLL_USB_VCO_FREQ_HZ                 (PLL_USB_VCO_FREQ_KHZ * KHZ)
+#define PLL_USB_VCO_FREQ_HZ (PLL_USB_VCO_FREQ_KHZ * KHZ)
 #endif
 #endif
 
 #if (USB_CLK_HZ == 48 * MHZ) && (XOSC_HZ == 12 * MHZ) && (PLL_USB_REFDIV == 1)
 // PLL settings for a USB clock of 48MHz.
-// PICO_CONFIG: PLL_USB_VCO_FREQ_HZ, USB clock PLL frequency, type=int, default=(1200 * MHZ), advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_USB_VCO_FREQ_HZ, USB clock PLL frequency, type=int, default=(1200 * MHZ), advanced=true,
+// group=hardware_clocks
 #ifndef PLL_USB_VCO_FREQ_HZ
-#define PLL_USB_VCO_FREQ_HZ                 (1200 * MHZ)
+#define PLL_USB_VCO_FREQ_HZ (1200 * MHZ)
 #endif
-// PICO_CONFIG: PLL_USB_POSTDIV1, USB clock PLL post divider 1 setting, type=int, default=5, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_USB_POSTDIV1, USB clock PLL post divider 1 setting, type=int, default=5, advanced=true,
+// group=hardware_clocks
 #ifndef PLL_USB_POSTDIV1
-#define PLL_USB_POSTDIV1                    5
+#define PLL_USB_POSTDIV1 5
 #endif
-// PICO_CONFIG: PLL_USB_POSTDIV2, USB clock PLL post divider 2 setting, type=int, default=5, advanced=true, group=hardware_clocks
+// PICO_CONFIG: PLL_USB_POSTDIV2, USB clock PLL post divider 2 setting, type=int, default=5, advanced=true,
+// group=hardware_clocks
 #ifndef PLL_USB_POSTDIV2
-#define PLL_USB_POSTDIV2                    5
+#define PLL_USB_POSTDIV2 5
 #endif
-#endif // USB_CLK_HZ == 48000000 && XOSC_HZ == 12000000 && PLL_COMMON_REFDIV == 1
+#endif  // USB_CLK_HZ == 48000000 && XOSC_HZ == 12000000 && PLL_COMMON_REFDIV == 1
 #if !defined(PLL_USB_VCO_FREQ_HZ) || !defined(PLL_USB_POSTDIV1) || !defined(PLL_USB_POSTDIV2)
 #error PLL_USB_VCO_FREQ_HZ, PLL_USB_POSTDIV1 and PLL_USB_POSTDIV2 must all be specified when using custom clock setup.
 #endif
 
-// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_CLOCKS, Enable/disable assertions in the hardware_clocks module, type=bool, default=0, group=hardware_clocks
+// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_CLOCKS, Enable/disable assertions in the hardware_clocks module,
+// type=bool, default=0, group=hardware_clocks
 #ifndef PARAM_ASSERTIONS_ENABLED_HARDWARE_CLOCKS
-#ifdef PARAM_ASSERTIONS_ENABLED_CLOCKS // backwards compatibility with SDK < 2.0.0
+#ifdef PARAM_ASSERTIONS_ENABLED_CLOCKS  // backwards compatibility with SDK < 2.0.0
 #define PARAM_ASSERTIONS_ENABLED_HARDWARE_CLOCKS PARAM_ASSERTIONS_ENABLED_CLOCKS
 #else
 #define PARAM_ASSERTIONS_ENABLED_HARDWARE_CLOCKS 0
 #endif
 #endif
 
- // PICO_CONFIG: PICO_CLOCK_GPIO_CLKDIV_ROUND_NEAREST, True if floating point GPIO clock divisors should be rounded to the nearest possible clock divisor rather than rounding down, type=bool, default=PICO_CLKDIV_ROUND_NEAREST, group=hardware_clocks
+// PICO_CONFIG: PICO_CLOCK_GPIO_CLKDIV_ROUND_NEAREST, True if floating point GPIO clock divisors should be rounded to
+// the nearest possible clock divisor rather than rounding down, type=bool, default=PICO_CLKDIV_ROUND_NEAREST,
+// group=hardware_clocks
 #ifndef PICO_CLOCK_GPIO_CLKDIV_ROUND_NEAREST
 #define PICO_CLOCK_GPIO_CLKDIV_ROUND_NEAREST PICO_CLKDIV_ROUND_NEAREST
 #endif
@@ -298,7 +339,8 @@ void clock_configure_undivided(clock_handle_t clock, uint32_t src, uint32_t auxs
  * \param src_freq Frequency of the input clock source
  * \param int_divider an integer divider
  */
-void clock_configure_int_divider(clock_handle_t clock, uint32_t src, uint32_t auxsrc, uint32_t src_freq, uint32_t int_divider);
+void clock_configure_int_divider(clock_handle_t clock, uint32_t src, uint32_t auxsrc, uint32_t src_freq,
+                                 uint32_t int_divider);
 
 /*! \brief Stop the specified clock
  *  \ingroup hardware_clocks
@@ -331,9 +373,7 @@ uint32_t frequency_count_khz(uint src);
 void clock_set_reported_hz(clock_handle_t clock, uint hz);
 
 /// \tag::frequency_count_mhz[]
-static inline float frequency_count_mhz(uint src) {
-    return ((float) (frequency_count_khz(src))) / KHZ;
-}
+static inline float frequency_count_mhz(uint src) { return ((float)(frequency_count_khz(src))) / KHZ; }
 /// \end::frequency_count_mhz[]
 
 /*! \brief Resus callback function type.
@@ -356,22 +396,24 @@ void clocks_enable_resus(resus_callback_t resus_callback);
 /*! \brief Output an optionally divided clock to the specified gpio pin.
  *  \ingroup hardware_clocks
  *
- * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the GPOUT0-3 clock generators.
- * \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a full list. The list is the same for each GPOUT clock generator.
- * \param div_int  The integer part of the value to divide the source clock by. This is useful to not overwhelm the GPIO pin with a fast clock. This is in range of 1..2^24-1 on RP2040
- *                 and 1..2^16-1 on RP2350
- * \param div_frac16 The fractional part of the value to divide the source clock by. This is in range of 0..65535 (/65536).
+ * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the
+ * GPOUT0-3 clock generators. \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a
+ * full list. The list is the same for each GPOUT clock generator. \param div_int  The integer part of the value to
+ * divide the source clock by. This is useful to not overwhelm the GPIO pin with a fast clock. This is in range
+ * of 1..2^24-1 on RP2040 and 1..2^16-1 on RP2350 \param div_frac16 The fractional part of the value to divide the
+ * source clock by. This is in range of 0..65535 (/65536).
  */
 void clock_gpio_init_int_frac16(uint gpio, uint src, uint32_t div_int, uint16_t div_frac16);
 
 /*! \brief Output an optionally divided clock to the specified gpio pin.
  *  \ingroup hardware_clocks
  *
- * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the GPOUT0-3 clock generators.
- * \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a full list. The list is the same for each GPOUT clock generator.
- * \param div_int  The integer part of the value to divide the source clock by. This is useful to not overwhelm the GPIO pin with a fast clock. This is in range of 1..2^24-1 on RP2040
- *                 and 1..2^16-1 on RP2350
- * \param div_frac8 The fractional part of the value to divide the source clock by. This is in range of 0..255 (/256).
+ * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the
+ * GPOUT0-3 clock generators. \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a
+ * full list. The list is the same for each GPOUT clock generator. \param div_int  The integer part of the value to
+ * divide the source clock by. This is useful to not overwhelm the GPIO pin with a fast clock. This is in range
+ * of 1..2^24-1 on RP2040 and 1..2^16-1 on RP2350 \param div_frac8 The fractional part of the value to divide the source
+ * clock by. This is in range of 0..255 (/256).
  */
 static inline void clock_gpio_init_int_frac8(uint gpio, uint src, uint32_t div_int, uint8_t div_frac8) {
     return clock_gpio_init_int_frac16(gpio, src, div_int, (uint16_t)(div_frac8 << 8u));
@@ -385,16 +427,16 @@ static inline void clock_gpio_init_int_frac(uint gpio, uint src, uint32_t div_in
 /*! \brief Output an optionally divided clock to the specified gpio pin.
  *  \ingroup hardware_clocks
  *
- * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the GPOUT0-3 clock generators.
- * \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a full list. The list is the same for each GPOUT clock generator.
- * \param div  The float amount to divide the source clock by. This is useful to not overwhelm the GPIO pin with a fast clock.
+ * \param gpio The GPIO pin to output the clock to. Valid GPIOs are: 21, 23, 24, 25. These GPIOs are connected to the
+ * GPOUT0-3 clock generators. \param src  The source clock. See the register field CLOCKS_CLK_GPOUT0_CTRL_AUXSRC for a
+ * full list. The list is the same for each GPOUT clock generator. \param div  The float amount to divide the source
+ * clock by. This is useful to not overwhelm the GPIO pin with a fast clock.
  */
-static inline void clock_gpio_init(uint gpio, uint src, float div)
-{
+static inline void clock_gpio_init(uint gpio, uint src, float div) {
     uint div_int = (uint)div;
     const int frac_bit_count = REG_FIELD_WIDTH(CLOCKS_CLK_GPOUT0_DIV_FRAC);
 #if PICO_CLOCK_GPIO_CLKDIV_ROUND_NEAREST
-    div += 0.5f / (1 << frac_bit_count); // round to the nearest fraction
+    div += 0.5f / (1 << frac_bit_count);  // round to the nearest fraction
 #endif
 #if REG_FIELD_WIDTH(CLOCKS_CLK_GPOUT0_DIV_FRAC) == 16
     uint16_t frac = (uint16_t)((div - (float)div_int) * (1u << frac_bit_count));

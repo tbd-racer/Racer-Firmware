@@ -5,14 +5,15 @@
  */
 
 #include "hardware/flash.h"
+
 #include "pico/bootrom.h"
 
 #if PICO_RP2040
 #include "hardware/structs/io_qspi.h"
 #include "hardware/structs/ssi.h"
 #else
-#include "hardware/structs/qmi.h"
 #include "hardware/regs/otp_data.h"
+#include "hardware/structs/qmi.h"
 #endif
 #include "hardware/xip_cache.h"
 
@@ -38,8 +39,9 @@ static uint32_t boot2_copyout[BOOT2_SIZE_WORDS];
 static bool boot2_copyout_valid = false;
 
 static void __no_inline_not_in_flash_func(flash_init_boot2_copyout)(void) {
-    if (boot2_copyout_valid)
+    if (boot2_copyout_valid) {
         return;
+    }
     // todo we may want the option of boot2 just being a free function in
     //      user RAM, e.g. if it is larger than 256 bytes
 #if PICO_RP2040
@@ -47,15 +49,15 @@ static void __no_inline_not_in_flash_func(flash_init_boot2_copyout)(void) {
 #else
     const volatile uint32_t *copy_from = (uint32_t *)BOOTRAM_BASE;
 #endif
-    for (int i = 0; i < BOOT2_SIZE_WORDS; ++i)
+    for (int i = 0; i < BOOT2_SIZE_WORDS; ++i) {
         boot2_copyout[i] = copy_from[i];
+    }
     __compiler_memory_barrier();
     boot2_copyout_valid = true;
 }
 
-
 static void __no_inline_not_in_flash_func(flash_enable_xip_via_boot2)(void) {
-    ((void (*)(void))((intptr_t)boot2_copyout+1))();
+    ((void (*)(void))((intptr_t)boot2_copyout + 1))();
 }
 
 #else
@@ -64,7 +66,8 @@ static void __no_inline_not_in_flash_func(flash_init_boot2_copyout)(void) {}
 
 static void __no_inline_not_in_flash_func(flash_enable_xip_via_boot2)(void) {
     // Set up XIP for 03h read on bus access (slow but generic)
-    rom_flash_enter_cmd_xip_fn flash_enter_cmd_xip_func = (rom_flash_enter_cmd_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_ENTER_CMD_XIP);
+    rom_flash_enter_cmd_xip_fn flash_enter_cmd_xip_func =
+        (rom_flash_enter_cmd_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_ENTER_CMD_XIP);
     assert(flash_enter_cmd_xip_func);
     flash_enter_cmd_xip_func();
 }
@@ -117,10 +120,13 @@ void __no_inline_not_in_flash_func(flash_range_erase)(uint32_t flash_offs, size_
 #endif
     invalid_params_if(HARDWARE_FLASH, flash_offs & (FLASH_SECTOR_SIZE - 1));
     invalid_params_if(HARDWARE_FLASH, count & (FLASH_SECTOR_SIZE - 1));
-    rom_connect_internal_flash_fn connect_internal_flash_func = (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
+    rom_connect_internal_flash_fn connect_internal_flash_func =
+        (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
     rom_flash_exit_xip_fn flash_exit_xip_func = (rom_flash_exit_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_EXIT_XIP);
-    rom_flash_range_erase_fn flash_range_erase_func = (rom_flash_range_erase_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_RANGE_ERASE);
-    rom_flash_flush_cache_fn flash_flush_cache_func = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
+    rom_flash_range_erase_fn flash_range_erase_func =
+        (rom_flash_range_erase_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_RANGE_ERASE);
+    rom_flash_flush_cache_fn flash_flush_cache_func =
+        (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
     assert(connect_internal_flash_func && flash_exit_xip_func && flash_range_erase_func && flash_flush_cache_func);
     flash_init_boot2_copyout();
     // Commit any pending writes to external RAM, to avoid losing them in the subsequent flush:
@@ -136,7 +142,7 @@ void __no_inline_not_in_flash_func(flash_range_erase)(uint32_t flash_offs, size_
     connect_internal_flash_func();
     flash_exit_xip_func();
     flash_range_erase_func(flash_offs, count, FLASH_BLOCK_SIZE, FLASH_BLOCK_ERASE_CMD);
-    flash_flush_cache_func(); // Note this is needed to remove CSn IO force as well as cache flushing
+    flash_flush_cache_func();  // Note this is needed to remove CSn IO force as well as cache flushing
     flash_enable_xip_via_boot2();
 #if PICO_RP2350
     flash_rp2350_restore_qmi_cs1(&qmi_save);
@@ -144,7 +150,8 @@ void __no_inline_not_in_flash_func(flash_range_erase)(uint32_t flash_offs, size_
 }
 
 void __no_inline_not_in_flash_func(flash_flush_cache)(void) {
-    rom_flash_flush_cache_fn flash_flush_cache_func = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
+    rom_flash_flush_cache_fn flash_flush_cache_func =
+        (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
     flash_flush_cache_func();
 }
 
@@ -154,10 +161,13 @@ void __no_inline_not_in_flash_func(flash_range_program)(uint32_t flash_offs, con
 #endif
     invalid_params_if(HARDWARE_FLASH, flash_offs & (FLASH_PAGE_SIZE - 1));
     invalid_params_if(HARDWARE_FLASH, count & (FLASH_PAGE_SIZE - 1));
-    rom_connect_internal_flash_fn connect_internal_flash_func = (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
+    rom_connect_internal_flash_fn connect_internal_flash_func =
+        (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
     rom_flash_exit_xip_fn flash_exit_xip_func = (rom_flash_exit_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_EXIT_XIP);
-    rom_flash_range_program_fn flash_range_program_func = (rom_flash_range_program_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_RANGE_PROGRAM);
-    rom_flash_flush_cache_fn flash_flush_cache_func = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
+    rom_flash_range_program_fn flash_range_program_func =
+        (rom_flash_range_program_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_RANGE_PROGRAM);
+    rom_flash_flush_cache_fn flash_flush_cache_func =
+        (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
     assert(connect_internal_flash_func && flash_exit_xip_func && flash_range_program_func && flash_flush_cache_func);
     flash_init_boot2_copyout();
     xip_cache_clean_all();
@@ -171,7 +181,7 @@ void __no_inline_not_in_flash_func(flash_range_program)(uint32_t flash_offs, con
     connect_internal_flash_func();
     flash_exit_xip_func();
     flash_range_program_func(flash_offs, data, count);
-    flash_flush_cache_func(); // Note this is needed to remove CSn IO force as well as cache flushing
+    flash_flush_cache_func();  // Note this is needed to remove CSn IO force as well as cache flushing
     flash_enable_xip_via_boot2();
 #if PICO_RP2350
     flash_rp2350_restore_qmi_cs1(&qmi_save);
@@ -186,13 +196,10 @@ void __no_inline_not_in_flash_func(flash_range_program)(uint32_t flash_offs, con
 // are still running, and the FIFO bottoms out. (the bootrom does the same)
 static void __no_inline_not_in_flash_func(flash_cs_force)(bool high) {
 #if PICO_RP2040
-    uint32_t field_val = high ?
-        IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_VALUE_HIGH :
-        IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_VALUE_LOW;
-    hw_write_masked(&io_qspi_hw->io[1].ctrl,
-        field_val << IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_LSB,
-        IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_BITS
-    );
+    uint32_t field_val =
+        high ? IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_VALUE_HIGH : IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_VALUE_LOW;
+    hw_write_masked(&io_qspi_hw->io[1].ctrl, field_val << IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_LSB,
+                    IO_QSPI_GPIO_QSPI_SS_CTRL_OUTOVER_BITS);
 #else
     if (high) {
         hw_clear_bits(&qmi_hw->direct_csr, QMI_DIRECT_CSR_ASSERT_CS0N_BITS);
@@ -203,9 +210,11 @@ static void __no_inline_not_in_flash_func(flash_cs_force)(bool high) {
 }
 
 void __no_inline_not_in_flash_func(flash_do_cmd)(const uint8_t *txbuf, uint8_t *rxbuf, size_t count) {
-    rom_connect_internal_flash_fn connect_internal_flash_func = (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
+    rom_connect_internal_flash_fn connect_internal_flash_func =
+        (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
     rom_flash_exit_xip_fn flash_exit_xip_func = (rom_flash_exit_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_EXIT_XIP);
-    rom_flash_flush_cache_fn flash_flush_cache_func = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
+    rom_flash_flush_cache_fn flash_flush_cache_func =
+        (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
     assert(connect_internal_flash_func && flash_exit_xip_func && flash_flush_cache_func);
     flash_init_boot2_copyout();
     xip_cache_clean_all();
@@ -276,21 +285,22 @@ void flash_get_unique_id(uint8_t *id_out) {
     __unused uint8_t *ignore = id_out;
     panic_unsupported();
 #else
-    uint8_t txbuf[FLASH_RUID_TOTAL_BYTES] = {0};
-    uint8_t rxbuf[FLASH_RUID_TOTAL_BYTES] = {0};
+    uint8_t txbuf[FLASH_RUID_TOTAL_BYTES] = { 0 };
+    uint8_t rxbuf[FLASH_RUID_TOTAL_BYTES] = { 0 };
     txbuf[0] = FLASH_RUID_CMD;
     flash_do_cmd(txbuf, rxbuf, FLASH_RUID_TOTAL_BYTES);
-    for (int i = 0; i < FLASH_RUID_DATA_BYTES; i++)
+    for (int i = 0; i < FLASH_RUID_DATA_BYTES; i++) {
         id_out[i] = rxbuf[i + 1 + FLASH_RUID_DUMMY_BYTES];
+    }
 #endif
 }
 
 #if !PICO_RP2040
 // This is a static symbol because the layout of FLASH_DEVINFO is liable to change from device to
 // device, so fields must have getters/setters.
-static io_rw_16 * flash_devinfo_ptr(void) {
+static io_rw_16 *flash_devinfo_ptr(void) {
     // Note the lookup returns a pointer to a 32-bit pointer literal in the ROM
-    io_rw_16 **p = (io_rw_16 **) rom_data_lookup(ROM_DATA_FLASH_DEVINFO16_PTR);
+    io_rw_16 **p = (io_rw_16 **)rom_data_lookup(ROM_DATA_FLASH_DEVINFO16_PTR);
     assert(p);
     return *p;
 }
@@ -306,7 +316,7 @@ static void flash_devinfo_update_field(uint16_t wdata, uint16_t mask) {
 // QMI window 1 registers on RP2350:
 flash_devinfo_size_t __no_inline_not_in_flash_func(flash_devinfo_get_cs_size)(uint cs) {
     invalid_params_if(HARDWARE_FLASH, cs > 1);
-    io_ro_16 *devinfo = (io_ro_16 *) flash_devinfo_ptr();
+    io_ro_16 *devinfo = (io_ro_16 *)flash_devinfo_ptr();
     if (cs == 0u) {
 #ifdef PICO_FLASH_SIZE_BYTES
         // A flash size explicitly specified for the build (e.g. from the board header) takes
@@ -315,19 +325,15 @@ flash_devinfo_size_t __no_inline_not_in_flash_func(flash_devinfo_get_cs_size)(ui
         if (PICO_FLASH_SIZE_BYTES == 0) {
             return FLASH_DEVINFO_SIZE_NONE;
         } else {
-            return (flash_devinfo_size_t) (
-                __builtin_ctz(PICO_FLASH_SIZE_BYTES / 8192u) + (uint)FLASH_DEVINFO_SIZE_8K
-            );
+            return (flash_devinfo_size_t)(__builtin_ctz(PICO_FLASH_SIZE_BYTES / 8192u) + (uint)FLASH_DEVINFO_SIZE_8K);
         }
 #else
-        return (flash_devinfo_size_t) (
-            (*devinfo & OTP_DATA_FLASH_DEVINFO_CS0_SIZE_BITS) >> OTP_DATA_FLASH_DEVINFO_CS0_SIZE_LSB
-        );
+        return (flash_devinfo_size_t)((*devinfo & OTP_DATA_FLASH_DEVINFO_CS0_SIZE_BITS) >>
+                                      OTP_DATA_FLASH_DEVINFO_CS0_SIZE_LSB);
 #endif
     } else {
-        return (flash_devinfo_size_t) (
-            (*devinfo & OTP_DATA_FLASH_DEVINFO_CS1_SIZE_BITS) >> OTP_DATA_FLASH_DEVINFO_CS1_SIZE_LSB
-        );
+        return (flash_devinfo_size_t)((*devinfo & OTP_DATA_FLASH_DEVINFO_CS1_SIZE_BITS) >>
+                                      OTP_DATA_FLASH_DEVINFO_CS1_SIZE_LSB);
     }
 }
 
@@ -336,10 +342,7 @@ void flash_devinfo_set_cs_size(uint cs, flash_devinfo_size_t size) {
     invalid_params_if(HARDWARE_FLASH, (uint)size > (uint)FLASH_DEVINFO_SIZE_MAX);
     uint cs_shift = cs == 0u ? OTP_DATA_FLASH_DEVINFO_CS0_SIZE_LSB : OTP_DATA_FLASH_DEVINFO_CS1_SIZE_LSB;
     uint16_t cs_mask = OTP_DATA_FLASH_DEVINFO_CS0_SIZE_BITS >> OTP_DATA_FLASH_DEVINFO_CS0_SIZE_LSB;
-    flash_devinfo_update_field(
-        (uint16_t)size << cs_shift,
-        cs_mask << cs_shift
-    );
+    flash_devinfo_update_field((uint16_t)size << cs_shift, cs_mask << cs_shift);
 }
 
 bool flash_devinfo_get_d8h_erase_supported(void) {
@@ -347,10 +350,8 @@ bool flash_devinfo_get_d8h_erase_supported(void) {
 }
 
 void flash_devinfo_set_d8h_erase_supported(bool supported) {
-    flash_devinfo_update_field(
-        (uint)supported << OTP_DATA_FLASH_DEVINFO_D8H_ERASE_SUPPORTED_LSB,
-        OTP_DATA_FLASH_DEVINFO_D8H_ERASE_SUPPORTED_BITS
-    );
+    flash_devinfo_update_field((uint)supported << OTP_DATA_FLASH_DEVINFO_D8H_ERASE_SUPPORTED_LSB,
+                               OTP_DATA_FLASH_DEVINFO_D8H_ERASE_SUPPORTED_BITS);
 }
 
 uint flash_devinfo_get_cs_gpio(uint cs) {
@@ -363,10 +364,8 @@ void flash_devinfo_set_cs_gpio(uint cs, uint gpio) {
     invalid_params_if(HARDWARE_FLASH, cs != 1);
     invalid_params_if(HARDWARE_FLASH, gpio >= NUM_BANK0_GPIOS);
     (void)cs;
-    flash_devinfo_update_field(
-        ((uint16_t)gpio) << OTP_DATA_FLASH_DEVINFO_CS1_GPIO_LSB,
-        OTP_DATA_FLASH_DEVINFO_CS1_GPIO_BITS
-    );
+    flash_devinfo_update_field(((uint16_t)gpio) << OTP_DATA_FLASH_DEVINFO_CS1_GPIO_LSB,
+                               OTP_DATA_FLASH_DEVINFO_CS1_GPIO_BITS);
 }
 
-#endif // !PICO_RP2040
+#endif  // !PICO_RP2040

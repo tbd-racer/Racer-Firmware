@@ -5,7 +5,7 @@
 
 #include "blocks/rfm95_base.h"
 
-// status LEDs 
+// status LEDs
 #define PICO_DEFAULT_LED_PIN 25
 
 // Radio connections

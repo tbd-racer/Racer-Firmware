@@ -6,19 +6,22 @@
 #include "driver/canbus.h"
 #include "titan/canmore.h"
 
-// PICO_CONFIG: CAN_HEARTBEAT_INTERVAL_MS, Interval for CANmore heartbeat transmission over CAN bus in milliseconds, type=int, default=1000, group=driver_canbus
+// PICO_CONFIG: CAN_HEARTBEAT_INTERVAL_MS, Interval for CANmore heartbeat transmission over CAN bus in milliseconds,
+// type=int, default=1000, group=driver_canbus
 #ifndef CAN_HEARTBEAT_INTERVAL_MS
 #define CAN_HEARTBEAT_INTERVAL_MS 500
 #endif
 
-// PICO_CONFIG: CAN_MCP251XFD_HEARTBEAT_TIMEOUT_MS, Time in milliseconds since last successful heartbeat transmission when the CAN bus is considered offline, type=int, min=1, default=2000, group=driver_canbus
+// PICO_CONFIG: CAN_MCP251XFD_HEARTBEAT_TIMEOUT_MS, Time in milliseconds since last successful heartbeat transmission
+// when the CAN bus is considered offline, type=int, min=1, default=2000, group=driver_canbus
 #ifndef CAN_MCP251XFD_HEARTBEAT_TIMEOUT_MS
 #define CAN_MCP251XFD_HEARTBEAT_TIMEOUT_MS 2000
 #endif
 
 // Note this is necessary due to the strange behavior of the chip randomly locking out transmissions in edge cases.
-// Rather than trying to solve all of these issues, it'll just reinitialize every so often if we haven't transmitted a heartbeat in a while
-// PICO_CONFIG: CAN_MCP251XFD_OFFLINE_RESET_TIMEOUT_MS, Time in milliseconds since CAN bus has gone offline after which the MCP251XFD is reset, type=int, min=1, default=10000, group=driver_canbus
+// Rather than trying to solve all of these issues, it'll just reinitialize every so often if we haven't transmitted a
+// heartbeat in a while PICO_CONFIG: CAN_MCP251XFD_OFFLINE_RESET_TIMEOUT_MS, Time in milliseconds since CAN bus has gone
+// offline after which the MCP251XFD is reset, type=int, min=1, default=10000, group=driver_canbus
 #ifndef CAN_MCP251XFD_OFFLINE_RESET_TIMEOUT_MS
 #define CAN_MCP251XFD_OFFLINE_RESET_TIMEOUT_MS 10000
 #endif
@@ -28,8 +31,8 @@
 // ========================================
 
 // Message sequence numbers when referring back to messages from the TEF
-#define MESSAGE_SEQ_UTILITY_NORMAL    0
-#define MESSAGE_SEQ_MSG_FRAME         1
+#define MESSAGE_SEQ_UTILITY_NORMAL 0
+#define MESSAGE_SEQ_MSG_FRAME 1
 #define MESSAGE_SEQ_UTILITY_HEARTBEAT 2
 
 bool can_mcp251xfd_configure(unsigned int client_id);
@@ -77,7 +80,7 @@ extern struct utility_message_buffer utility_rx_buf;
 
 /**
  * @brief Holds data waiting to be transmitted
-*/
+ */
 extern canmore_msg_encoder_t encoding_buffer;
 
 /**

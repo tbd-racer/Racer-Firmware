@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "pico/time.h"
 
+#include "pico/time.h"
 
 /**
  * @file safety.h
@@ -23,7 +23,8 @@
  *
  *  - Crash Reporting: Hooks various parts of the low-level firmware to provide in-depth information about any crashes
  *      in the system to aid in debugging. This code hooks the systick handler to report an uptime, the hardfault,
- *      assertion, and panic handlers to provide crash information, and stores this information for SAFETY_NUM_CRASH_LOG_ENTRIES.
+ *      assertion, and panic handlers to provide crash information, and stores this information for
+ * SAFETY_NUM_CRASH_LOG_ENTRIES.
  *
  *  - Profiler: Records timestamps of various critical points in code to determine execution time for the various
  *      functions in firmware. This data is recorded and can be printed during a watchdoog reset and extracted during
@@ -33,29 +34,31 @@
  *      such as kill switch updates, are never missed.
  */
 
-// PICO_CONFIG: SAFETY_KILL_SWITCH_TIMEOUT_MS, Timeout in milliseconds of kill switch commands requiring updating. Note it may take longer to disable as it is only refreshed during safety_tick, type=int, default=500, group=titan_safety
+// PICO_CONFIG: SAFETY_KILL_SWITCH_TIMEOUT_MS, Timeout in milliseconds of kill switch commands requiring updating. Note
+// it may take longer to disable as it is only refreshed during safety_tick, type=int, default=500, group=titan_safety
 #ifndef SAFETY_KILL_SWITCH_TIMEOUT_MS
 #define SAFETY_KILL_SWITCH_TIMEOUT_MS 500
 #endif
 
-// PICO_CONFIG: SAFETY_SOFTWARE_KILL_FRAME_STR_SIZE, Maximum size of software kill frame string to avoid competing software kill publishers, type=int, default=32, group=titan_safety
+// PICO_CONFIG: SAFETY_SOFTWARE_KILL_FRAME_STR_SIZE, Maximum size of software kill frame string to avoid competing
+// software kill publishers, type=int, default=32, group=titan_safety
 #ifndef SAFETY_SOFTWARE_KILL_FRAME_STR_SIZE
 #define SAFETY_SOFTWARE_KILL_FRAME_STR_SIZE 32
 #endif
 
-// PICO_CONFIG: SAFETY_NUM_CRASH_LOG_ENTRIES, Number of crash log entries to store in crash history, type=int, default=24, group=titan_safety
+// PICO_CONFIG: SAFETY_NUM_CRASH_LOG_ENTRIES, Number of crash log entries to store in crash history, type=int,
+// default=24, group=titan_safety
 #ifndef SAFETY_NUM_CRASH_LOG_ENTRIES
 #define SAFETY_NUM_CRASH_LOG_ENTRIES 24
 #endif
-
 
 // ========================================
 // Fault Management Functions
 // ========================================
 
 // MAX_FAULT_ID is determined by the fault_list_reg size (32-bit)
-#define MAX_FAULT_ID          31
-#define FAULT_WATCHDOG_RESET   0
+#define MAX_FAULT_ID 31
+#define FAULT_WATCHDOG_RESET 0
 #define FAULT_WATCHDOG_WARNING 1
 // All other fault ids are implentation specific
 
@@ -64,7 +67,7 @@
  *
  * Do not write to this variable, use safety_raise_fault/safety_lower_fault instead
  */
-extern volatile uint32_t * const fault_list_reg;
+extern volatile uint32_t* const fault_list_reg;
 
 /**
  * @brief Raises the specified fault id
@@ -90,18 +93,17 @@ void safety_lower_fault(uint32_t fault_id);
  * @param fault_id The fault id to lookup
  * @return const char* The fault name
  */
-const char * safety_lookup_fault_id(uint32_t fault_id);
-
+const char* safety_lookup_fault_id(uint32_t fault_id);
 
 // ========================================
 // Kill Switch Management Functions
 // ========================================
 
 struct kill_switch_state {
-    bool enabled;                   // If the specific kill switch is enabled
-    bool asserting_kill;            // If the kill switch is asserting a kill request (system disable)
-    bool needs_update;              // If the switch needs to be updated or it will be considered killed
-    absolute_time_t update_timeout; // The last update timestamp of the switch
+    bool enabled;                    // If the specific kill switch is enabled
+    bool asserting_kill;             // If the kill switch is asserting a kill request (system disable)
+    bool needs_update;               // If the switch needs to be updated or it will be considered killed
+    absolute_time_t update_timeout;  // The last update timestamp of the switch
 
     // The frame that asserted the kill switch
     // Prevents another node from de-asserting kill by publishing that it is not killed with the same switch id
@@ -123,7 +125,8 @@ extern struct kill_switch_state kill_switch_states[];
  *
  * @param switch_num The unique number for that kill switch. MUST BE < MAX_KILL_SWITCHES
  * @param asserting_kill If the kill switch is asserting a kill request (system disable)
- * @param needs_update Setting to true will require the kill switch to be updated within SAFETY_KILL_SWITCH_TIMEOUT_MS or else will assert kill
+ * @param needs_update Setting to true will require the kill switch to be updated within SAFETY_KILL_SWITCH_TIMEOUT_MS
+ * or else will assert kill
  */
 void safety_kill_switch_update(uint8_t switch_num, bool asserting_kill, bool needs_update);
 
@@ -147,13 +150,11 @@ bool safety_kill_get_asserting_kill(void);
  */
 absolute_time_t safety_kill_get_last_change(void);
 
-
 // ========================================
 // Safety Watchdog-Related Functions
 // ========================================
 
 struct crash_data {
-
     union {
         uint32_t i;
         struct __attribute__((__packed__)) {
@@ -161,9 +162,9 @@ struct crash_data {
             union {
                 uint8_t i;
                 struct {
-                    #define VALID_MAGIC_VALUE 0x5
-                    uint8_t valid:4;
-                    uint8_t log_wrapped:1;
+#define VALID_MAGIC_VALUE 0x5
+                    uint8_t valid : 4;
+                    uint8_t log_wrapped : 1;
                 };
             } flags;
             uint8_t next_entry;
@@ -252,7 +253,6 @@ void safety_deinit(void);
  * safety_setup must be called before this function can be used
  */
 void safety_tick(void);
-
 
 // ========================================
 // Profiler Functions

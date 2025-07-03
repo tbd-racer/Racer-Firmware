@@ -1,18 +1,15 @@
-#include "pico/stdlib.h"
-
-#include "pico/stdio_usb.h"
-
+#include "display.h"
 #include "driver/async_i2c.h"
+#include "driver/bq40z80.h"
 #include "driver/canbus.h"
 #include "driver/led.h"
-#include "driver/bq40z80.h"
 #include "micro_ros_pico/transport_can.h"
-#include "titan/logger.h"
-#include "titan/version.h"
-
-#include "display.h"
+#include "pico/stdio_usb.h"
+#include "pico/stdlib.h"
 #include "ros.h"
 #include "safety_interface.h"
+#include "titan/logger.h"
+#include "titan/version.h"
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -29,13 +26,13 @@
 // Initialize all to nil time
 // For background timers, they will fire immediately
 // For ros timers, they will be reset before being ticked by start_ros_timers
-absolute_time_t next_heartbeat = {0};
-absolute_time_t next_status_update = {0};
-absolute_time_t next_led_update = {0};
-absolute_time_t next_connect_ping = {0};
-absolute_time_t next_battery_status_update = {0};
-absolute_time_t next_shutdown_update = {0};
-absolute_time_t next_display_update = {0};
+absolute_time_t next_heartbeat = { 0 };
+absolute_time_t next_status_update = { 0 };
+absolute_time_t next_led_update = { 0 };
+absolute_time_t next_connect_ping = { 0 };
+absolute_time_t next_battery_status_update = { 0 };
+absolute_time_t next_shutdown_update = { 0 };
+absolute_time_t next_display_update = { 0 };
 
 uint8_t presence_fail_count = 0;
 bq_pack_info_t bq_pack_info;
@@ -65,19 +62,19 @@ static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bo
             if (!is_first_fire) {
                 LOG_WARN("Missed %u runs of %s timer 0x%p", i, (error_on_miss ? "critical" : "non-critical"),
                          next_fire_ptr);
-                if (error_on_miss)
+                if (error_on_miss) {
                     safety_raise_fault(FAULT_TIMER_MISSED);
+                }
             }
         }
         *next_fire_ptr = time_tmp;
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }
 
-static void start_ros_timers(){
+static void start_ros_timers() {
     next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
     next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
     next_battery_status_update = make_timeout_time_ms(BATTERY_STATUS_TIME_MS);
@@ -114,14 +111,14 @@ static void tick_background_tasks() {
     // Determine if we need a shutdown
     if (timer_ready(&next_shutdown_update, PRESENCE_CHECK_INTERVAL_MS, false)) {
         // check if we need to update the presence counter
-        if(!(canbus_check_online() || bq_pack_present())){
-            presence_fail_count ++;
+        if (!(canbus_check_online() || bq_pack_present())) {
+            presence_fail_count++;
         } else {
             presence_fail_count = 0;
         }
 
         // if the presence counter times out, shut down
-        if(presence_fail_count > PRESENCE_TIMEOUT_COUNT){
+        if (presence_fail_count > PRESENCE_TIMEOUT_COUNT) {
             LOG_WARN("Pack not detected after %ds. Powering down!", PRESENCE_TIMEOUT_COUNT);
             gpio_put(PWR_CTRL_PIN, 0);
         }
@@ -162,17 +159,17 @@ int main() {
 
     // start the bq40z80
     int err = bq_init();
-    if(err > 0) {
+    if (err > 0) {
         LOG_ERROR("Failed to initialize the bq40z80 after %d attempts", err);
         panic("BQ40Z80 Init failed!");
     }
 
     // grab the pack info from the bq40z80
     bq_pack_info = bq_pack_mfg_info();
-    LOG_INFO("pack %s, mfg %d/%d/%d, SER# %d", bq_pack_info.name, bq_pack_info.mfg_mo,
-            bq_pack_info.mfg_day, bq_pack_info.mfg_year, bq_pack_info.serial);
+    LOG_INFO("pack %s, mfg %d/%d/%d, SER# %d", bq_pack_info.name, bq_pack_info.mfg_mo, bq_pack_info.mfg_day,
+             bq_pack_info.mfg_year, bq_pack_info.serial);
 
-    can_id = 10; // TODO update this from flash
+    can_id = 10;  // TODO update this from flash
     if (!transport_can_init(can_id)) {
         // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
         panic("Failed to initialize CAN bus hardware!");
@@ -187,19 +184,19 @@ int main() {
     //   20ms of time worst case before the watchdog fires (as the ROS timeout is 30ms)
     // Meaning, don't block, either poll it in the background task or send it to an interrupt
     bool ros_initialized = false;
-    while(true) {
+    while (true) {
         // Do background tasks
         tick_background_tasks();
 
         // Handle ROS state logic
-        if(is_ros_connected()) {
-            if(!ros_initialized) {
+        if (is_ros_connected()) {
+            if (!ros_initialized) {
                 LOG_INFO("ROS connected");
 
                 // Lower all ROS related faults as we've got a new ROS context
                 safety_lower_fault(FAULT_ROS_ERROR);
 
-                if(ros_init(0) == RCL_RET_OK) { // TODO supply board serial number here
+                if (ros_init(0) == RCL_RET_OK) {  // TODO supply board serial number here
                     ros_initialized = true;
                     led_ros_connected_set(true);
                     safety_init();
@@ -213,7 +210,7 @@ int main() {
                 ros_spin_executor();
                 tick_ros_tasks();
             }
-        } else if(ros_initialized){
+        } else if (ros_initialized) {
             LOG_INFO("Lost connection to ROS");
             ros_fini();
             safety_deinit();
@@ -230,7 +227,6 @@ int main() {
 
         // Tick safety
         safety_tick();
-
     }
 
     return 0;

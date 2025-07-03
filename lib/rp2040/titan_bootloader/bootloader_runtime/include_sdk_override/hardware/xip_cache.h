@@ -7,8 +7,8 @@
 #ifndef _HARDWARE_XIP_CACHE_H
 #define _HARDWARE_XIP_CACHE_H
 
-#include "pico.h"
 #include "hardware/regs/addressmap.h"
+#include "pico.h"
 
 /** \file xip_cache.h
  *  \defgroup hardware_xip_cache hardware_xip_cache
@@ -55,7 +55,8 @@
  *
  */
 
-// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_XIP_CACHE, Enable/disable assertions in the hardware_xip_cache module, type=bool, default=0, group=hardware_xip_cache
+// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_XIP_CACHE, Enable/disable assertions in the hardware_xip_cache module,
+// type=bool, default=0, group=hardware_xip_cache
 #ifndef PARAM_ASSERTIONS_ENABLED_HARDWARE_XIP_CACHE
 #define PARAM_ASSERTIONS_ENABLED_HARDWARE_XIP_CACHE 0
 #endif
@@ -205,6 +206,6 @@ void xip_cache_pin_range(uintptr_t start_offset, uintptr_t size_bytes);
 }
 #endif
 
-#endif // !__ASSEMBLER__
+#endif  // !__ASSEMBLER__
 
-#endif // !_HARDWARE_XIP_CACHE_H
+#endif  // !_HARDWARE_XIP_CACHE_H

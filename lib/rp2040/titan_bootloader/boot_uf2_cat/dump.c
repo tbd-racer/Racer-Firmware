@@ -4,20 +4,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "boot/uf2.h"
 
 #define BOOTLOADER_SIZE 0x4000
 #define FLASH_BASE 0x10000000
-#define FLASH_SIZE (16*1024*1024) // 16 MB Flash size
-#define UF2_PAGE_SIZE 256       // All RP2040 UF2 files are have 256 bytes of data for flashing
+#define FLASH_SIZE (16 * 1024 * 1024)  // 16 MB Flash size
+#define UF2_PAGE_SIZE 256              // All RP2040 UF2 files are have 256 bytes of data for flashing
 
-#define FLASH_USAGE_ARRAY_SIZE (FLASH_SIZE/(UF2_PAGE_SIZE*8))
-static_assert(FLASH_SIZE % (UF2_PAGE_SIZE*8) == 0, "Unaligned flash size");
-
+#define FLASH_USAGE_ARRAY_SIZE (FLASH_SIZE / (UF2_PAGE_SIZE * 8))
+static_assert(FLASH_SIZE % (UF2_PAGE_SIZE * 8) == 0, "Unaligned flash size");
 
 struct uf2_handle {
-    const char *filename;
-    FILE *fp;
+    const char* filename;
+    FILE* fp;
     uint32_t base_addr;
     uint32_t num_blocks;
 };
@@ -25,7 +25,7 @@ struct uf2_handle {
 // #define DEBUG_VERIFY(...) do {} while(0)
 #define DEBUG_VERIFY(...) printf(__VA_ARGS__)
 
-bool is_block_valid(struct uf2_block *block, uint32_t expected_num_blocks, bool verify_num_blocks) {
+bool is_block_valid(struct uf2_block* block, uint32_t expected_num_blocks, bool verify_num_blocks) {
     // Make sure UF2 magics are valid
     if (block->magic_start0 != UF2_MAGIC_START0) {
         DEBUG_VERIFY("Invalid magic start0: 0x%08x\n", block->magic_start0);
@@ -71,7 +71,8 @@ bool is_block_valid(struct uf2_block *block, uint32_t expected_num_blocks, bool 
 
     // Check address is valid within flash
     if (block->target_addr < min_addr || block->target_addr > max_addr) {
-        DEBUG_VERIFY("Invalid address: 0x%08x out of range (0x%08x - 0x%08x)\n", block->target_addr, min_addr, max_addr);
+        DEBUG_VERIFY("Invalid address: 0x%08x out of range (0x%08x - 0x%08x)\n", block->target_addr, min_addr,
+                     max_addr);
         return false;
     }
 
@@ -90,7 +91,7 @@ bool is_block_valid(struct uf2_block *block, uint32_t expected_num_blocks, bool 
     return true;
 }
 
-bool open_uf2(const char *filename, struct uf2_handle* handle_out) {
+bool open_uf2(const char* filename, struct uf2_handle* handle_out) {
     FILE* f = fopen(filename, "r");
     if (f == NULL) {
         printf("[%s] Failed to open file: %s\n", filename, strerror(errno));
@@ -165,14 +166,16 @@ bool dump_uf2(struct uf2_handle* handle) {
 
         // Ensure that the block numbering is sequential
         if (expected_block_no != block.block_no) {
-            printf("[%s] Out of order UF2 block (%d expected, %d found)\n", handle->filename, expected_block_no, block.block_no);
+            printf("[%s] Out of order UF2 block (%d expected, %d found)\n", handle->filename, expected_block_no,
+                   block.block_no);
             return false;
         }
         expected_block_no++;
 
         // Ensure that target address is in-order and contiguous
         if (expected_addr != block.target_addr) {
-            printf("[%s] Non-contiguous UF2 address (0x%08x expected, 0x%08x found)\n", handle->filename, expected_addr, block.target_addr);
+            printf("[%s] Non-contiguous UF2 address (0x%08x expected, 0x%08x found)\n", handle->filename, expected_addr,
+                   block.target_addr);
             return false;
         }
         expected_addr += UF2_PAGE_SIZE;
@@ -196,7 +199,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (!open_uf2(argv[1], &handle)) return 1;
+    if (!open_uf2(argv[1], &handle)) {
+        return 1;
+    }
     dump_uf2(&handle);
 
 cleanup:

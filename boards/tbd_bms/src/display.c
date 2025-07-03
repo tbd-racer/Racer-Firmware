@@ -1,8 +1,9 @@
 #include "display.h"
+
 #include <stdio.h>
-#include "pico/time.h"
 
 #include "driver/ssd1306.h"
+#include "pico/time.h"
 
 bool display_on = false;
 absolute_time_t display_poweroff_time;

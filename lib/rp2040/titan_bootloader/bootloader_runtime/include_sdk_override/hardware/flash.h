@@ -34,9 +34,10 @@
  * \include flash_program.c
  */
 
-// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_FLASH, Enable/disable assertions in the hardware_flash module, type=bool, default=0, group=hardware_flash
+// PICO_CONFIG: PARAM_ASSERTIONS_ENABLED_HARDWARE_FLASH, Enable/disable assertions in the hardware_flash module,
+// type=bool, default=0, group=hardware_flash
 #ifndef PARAM_ASSERTIONS_ENABLED_HARDWARE_FLASH
-#ifdef PARAM_ASSERTIONS_ENABLED_FLASH // backwards compatibility with SDK < 2.0.0
+#ifdef PARAM_ASSERTIONS_ENABLED_FLASH  // backwards compatibility with SDK < 2.0.0
 #define PARAM_ASSERTIONS_ENABLED_HARDWARE_FLASH PARAM_ASSERTIONS_ENABLED_FLASH
 #else
 #define PARAM_ASSERTIONS_ENABLED_HARDWARE_FLASH 0
@@ -50,7 +51,8 @@
 #define FLASH_UNIQUE_ID_SIZE_BYTES 8
 #endif
 
-// PICO_CONFIG: PICO_FLASH_SIZE_BYTES, size of primary flash in bytes, type=int, default=Usually provided via board header, group=hardware_flash
+// PICO_CONFIG: PICO_FLASH_SIZE_BYTES, size of primary flash in bytes, type=int, default=Usually provided via board
+// header, group=hardware_flash
 
 #ifdef __cplusplus
 extern "C" {
@@ -114,8 +116,8 @@ void flash_get_unique_id(uint8_t *id_out);
  * implementation of pico_get_unique_id() for an example of this.
  *
  *  \param txbuf Pointer to a byte buffer which will be transmitted to the flash
- *  \param rxbuf Pointer to a byte buffer where data received from the flash will be written. txbuf and rxbuf may be the same buffer.
- *  \param count Length in bytes of txbuf and of rxbuf
+ *  \param rxbuf Pointer to a byte buffer where data received from the flash will be written. txbuf and rxbuf may be the
+ * same buffer. \param count Length in bytes of txbuf and of rxbuf
  */
 void flash_do_cmd(const uint8_t *txbuf, uint8_t *rxbuf, size_t count);
 
@@ -161,7 +163,7 @@ static inline flash_devinfo_size_t flash_devinfo_bytes_to_size(uint32_t bytes) {
     if (sectors <= 1u) {
         return FLASH_DEVINFO_SIZE_NONE;
     } else {
-        return (flash_devinfo_size_t) __builtin_ctz(sectors);
+        return (flash_devinfo_size_t)__builtin_ctz(sectors);
     }
 }
 
@@ -245,7 +247,7 @@ uint flash_devinfo_get_cs_gpio(uint cs);
  */
 void flash_devinfo_set_cs_gpio(uint cs, uint gpio);
 
-#endif // !PICO_RP2040
+#endif  // !PICO_RP2040
 
 #ifdef __cplusplus
 }

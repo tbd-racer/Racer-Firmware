@@ -58,9 +58,7 @@ void status_strip_status_flash(uint8_t red, uint8_t green, uint8_t blue);
 /**
  * @brief Clears the current command and sets the status strip to off.
  */
-static inline void status_strip_clear(void) {
-    status_strip_set(STATUS_STRIP_MODE_SOLID, 0, 0, 0);
-}
+static inline void status_strip_clear(void) { status_strip_set(STATUS_STRIP_MODE_SOLID, 0, 0, 0); }
 
 /**
  * @brief Enables strip output.

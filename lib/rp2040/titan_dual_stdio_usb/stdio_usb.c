@@ -9,14 +9,13 @@
 #endif
 
 #if !defined(LIB_TINYUSB_HOST) && !defined(LIB_TINYUSB_DEVICE)
-#include "tusb.h"
-
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "pico/binary_info.h"
 #include "pico/mutex.h"
 #include "pico/stdio/driver.h"
 #include "pico/time.h"
+#include "tusb.h"
 
 #define USBD_ITF_STDIO_CDC (0)
 #define USBD_ITF_SECONDARY_CDC (1)
@@ -40,25 +39,23 @@ static int _stdio_usb_out_data(const char *buf, int length) {
     int i;
     for (i = 0; i < length;) {
         int n = length - i;
-        int avail = (int) tud_cdc_n_write_available(USBD_ITF_STDIO_CDC);
-        if (n > avail)
+        int avail = (int)tud_cdc_n_write_available(USBD_ITF_STDIO_CDC);
+        if (n > avail) {
             n = avail;
+        }
         if (n) {
-            int n2 = (int) tud_cdc_n_write(USBD_ITF_STDIO_CDC, buf + i, (uint32_t) n);
+            int n2 = (int)tud_cdc_n_write(USBD_ITF_STDIO_CDC, buf + i, (uint32_t)n);
             tud_task();
             tud_cdc_n_write_flush(USBD_ITF_STDIO_CDC);
             i += n2;
-        }
-        else {
+        } else {
             break;
         }
     }
     return i;
 }
 
-static inline int positive_modulo(int i, int n) {
-    return (i % n + n) % n;
-}
+static inline int positive_modulo(int i, int n) { return (i % n + n) % n; }
 
 bool _try_handle_unsent_buffer(void) {
     if (!mutex_try_enter(&unsent_buffer_mutex, NULL)) {
@@ -69,8 +66,7 @@ bool _try_handle_unsent_buffer(void) {
         int sent = _stdio_usb_out_data(overflow_msg, sizeof(overflow_msg));
         if (sent == sizeof(overflow_msg)) {
             unsent_buffer_overflow = false;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -79,8 +75,7 @@ bool _try_handle_unsent_buffer(void) {
         int sent = _stdio_usb_out_data(mutex_msg, sizeof(mutex_msg));
         if (sent == sizeof(mutex_msg)) {
             buffer_mutex_data_drop = false;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -89,11 +84,11 @@ bool _try_handle_unsent_buffer(void) {
     if (unsent_buffer_next_in >= unsent_buffer_next_out) {
         sent =
             _stdio_usb_out_data(&unsent_buffer[unsent_buffer_next_out], unsent_buffer_next_in - unsent_buffer_next_out);
-    }
-    else {
+    } else {
         sent = _stdio_usb_out_data(&unsent_buffer[unsent_buffer_next_out], unsent_buffer_size - unsent_buffer_next_out);
-        if (sent == unsent_buffer_size - unsent_buffer_next_out)
+        if (sent == unsent_buffer_size - unsent_buffer_next_out) {
             sent += _stdio_usb_out_data(unsent_buffer, unsent_buffer_next_in);
+        }
     }
     unsent_buffer_next_out = ((unsent_buffer_next_out + sent) % unsent_buffer_size);
 
@@ -179,8 +174,7 @@ static void stdio_usb_out_chars(const char *buf, int length) {
         if (sent < length) {
             _write_unsent_buffer(buf + sent, length - sent);
         }
-    }
-    else {
+    } else {
         // If not connected then buffer data
         _write_unsent_buffer(buf, length);
     }
@@ -190,14 +184,15 @@ static void stdio_usb_out_chars(const char *buf, int length) {
 int stdio_usb_in_chars(char *buf, int length) {
     uint32_t owner;
     if (!mutex_try_enter(&stdio_usb_mutex, &owner)) {
-        if (owner == get_core_num())
+        if (owner == get_core_num()) {
             return PICO_ERROR_NO_DATA;  // would deadlock otherwise
+        }
         mutex_enter_blocking(&stdio_usb_mutex);
     }
     int rc = PICO_ERROR_NO_DATA;
     if (tud_cdc_n_connected(USBD_ITF_STDIO_CDC) && tud_cdc_n_available(USBD_ITF_STDIO_CDC)) {
         tud_task();
-        int count = (int) tud_cdc_n_read(USBD_ITF_STDIO_CDC, buf, (uint32_t) length);
+        int count = (int)tud_cdc_n_read(USBD_ITF_STDIO_CDC, buf, (uint32_t)length);
         rc = count ? count : PICO_ERROR_NO_DATA;
     }
     mutex_exit(&stdio_usb_mutex);
@@ -247,9 +242,7 @@ bool dual_usb_init(void) {
     return rc;
 }
 
-bool stdio_usb_connected(void) {
-    return tud_cdc_n_connected(USBD_ITF_STDIO_CDC);
-}
+bool stdio_usb_connected(void) { return tud_cdc_n_connected(USBD_ITF_STDIO_CDC); }
 
 /*
  * Secondary USB Interface
@@ -260,25 +253,26 @@ size_t secondary_usb_out_chars(const unsigned char *buf, int length) {
     uint32_t owner;
     size_t chars_sent = 0;
     if (!mutex_try_enter(&stdio_usb_mutex, &owner)) {
-        if (owner == get_core_num())
+        if (owner == get_core_num()) {
             return 0;  // would deadlock otherwise
+        }
         mutex_enter_blocking(&stdio_usb_mutex);
     }
     if (tud_cdc_n_connected(USBD_ITF_SECONDARY_CDC)) {
         for (int i = 0; i < length;) {
             int n = length - i;
-            int avail = (int) tud_cdc_n_write_available(USBD_ITF_SECONDARY_CDC);
-            if (n > avail)
+            int avail = (int)tud_cdc_n_write_available(USBD_ITF_SECONDARY_CDC);
+            if (n > avail) {
                 n = avail;
+            }
             if (n) {
-                int n2 = (int) tud_cdc_n_write(USBD_ITF_SECONDARY_CDC, buf + i, (uint32_t) n);
+                int n2 = (int)tud_cdc_n_write(USBD_ITF_SECONDARY_CDC, buf + i, (uint32_t)n);
                 tud_task();
                 tud_cdc_n_write_flush(USBD_ITF_SECONDARY_CDC);
                 i += n2;
                 chars_sent += n2;
                 last_avail_time_secondary = time_us_64();
-            }
-            else {
+            } else {
                 tud_task();
                 tud_cdc_n_write_flush(USBD_ITF_SECONDARY_CDC);
                 if (!tud_cdc_n_connected(USBD_ITF_SECONDARY_CDC) ||
@@ -288,8 +282,7 @@ size_t secondary_usb_out_chars(const unsigned char *buf, int length) {
                 }
             }
         }
-    }
-    else {
+    } else {
         // reset our timeout
         last_avail_time_secondary = 0;
     }
@@ -300,28 +293,25 @@ size_t secondary_usb_out_chars(const unsigned char *buf, int length) {
 int secondary_usb_in_chars(unsigned char *buf, int length) {
     uint32_t owner;
     if (!mutex_try_enter(&stdio_usb_mutex, &owner)) {
-        if (owner == get_core_num())
+        if (owner == get_core_num()) {
             return PICO_ERROR_NO_DATA;  // would deadlock otherwise
+        }
         mutex_enter_blocking(&stdio_usb_mutex);
     }
     int rc = PICO_ERROR_NO_DATA;
     if (tud_cdc_n_connected(USBD_ITF_SECONDARY_CDC) && tud_cdc_n_available(USBD_ITF_SECONDARY_CDC)) {
         tud_task();
-        int count = (int) tud_cdc_n_read(USBD_ITF_SECONDARY_CDC, buf, (uint32_t) length);
+        int count = (int)tud_cdc_n_read(USBD_ITF_SECONDARY_CDC, buf, (uint32_t)length);
         rc = count ? count : PICO_ERROR_NO_DATA;
     }
     mutex_exit(&stdio_usb_mutex);
     return rc;
 }
 
-bool secondary_usb_connected(void) {
-    return tud_cdc_n_connected(USBD_ITF_SECONDARY_CDC);
-}
+bool secondary_usb_connected(void) { return tud_cdc_n_connected(USBD_ITF_SECONDARY_CDC); }
 
 #else
 #include "pico/stdio_usb.h"
 #warning stdio USB was configured, but is being disabled as TinyUSB is explicitly linked
-bool stdio_usb_init(void) {
-    return false;
-}
+bool stdio_usb_init(void) { return false; }
 #endif

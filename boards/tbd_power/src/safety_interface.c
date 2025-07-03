@@ -1,19 +1,12 @@
 #include <assert.h>
 // #include "driver/canbus.h" CRH: USB transport is used instead of CAN
 #include "driver/led.h"
-
 #include "safety_interface.h"
 #include "titan/logger.h"
 
-
 remote_kill_switch_states_t remote_kill_switch_states[] = {
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED,
 };
 
 // ========================================
@@ -21,9 +14,9 @@ remote_kill_switch_states_t remote_kill_switch_states[] = {
 // ========================================
 
 void safety_set_fault_led(bool on) {
-    #ifdef MICRO_ROS_TRANSPORT_CAN
+#ifdef MICRO_ROS_TRANSPORT_CAN
     canbus_set_device_in_error(on);
-    #endif
+#endif
 
     led_fault_set(on);
 }
@@ -42,9 +35,7 @@ void safety_handle_enable(void) {
     led_killswitch_set(true);
 }
 
-void safety_interface_setup(void) {
-
-}
+void safety_interface_setup(void) {}
 
 // CRH: USB transport is used instead of CAN
 // void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
@@ -57,7 +48,7 @@ void safety_interface_setup(void) {
 
 void safety_interface_init(void) {
     // CRH: USB transport is used instead of CAN
-    // canbus_set_receive_error_cb(safety_handle_can_receive_error); 
+    // canbus_set_receive_error_cb(safety_handle_can_receive_error);
     // canbus_set_internal_error_cb(safety_handle_can_internal_error);
 }
 
@@ -68,20 +59,16 @@ void safety_interface_tick(void) {
 
     // Update the offboard kill switches
     // Offboard starts at 1
-    for(int i = 1; i < NUM_KILL_SWITCHES; i++){
-
+    for (int i = 1; i < NUM_KILL_SWITCHES; i++) {
         if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_ASSERTING) {
             LOG_INFO("Remote kill switch %d asserting", i);
             safety_kill_switch_update(i, true, true);
-        }
-        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NOT_ASSERTING) {
+        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NOT_ASSERTING) {
             safety_kill_switch_update(i, false, true);
-        }
-        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NO_CONTACT) {
+        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NO_CONTACT) {
             // If no contact, we assume the switch is not asserting
             safety_kill_switch_update(i, false, true);
-        }
-        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_DISABLED) {
+        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_DISABLED) {
             // If disabled, we do not update the switch
             continue;
         }
@@ -99,20 +86,21 @@ void set_radio_kill_switch_state(uint32_t switch_id, remote_kill_switch_states_t
     remote_kill_switch_states[switch_id] = remote_kill_switch_state;
 }
 
-
 // ========================================
 // Constant Calculations - Does not need to be modified
 // ========================================
 
-struct kill_switch_state kill_switch_states[NUM_KILL_SWITCHES] = {[0 ... NUM_KILL_SWITCHES-1] = { .enabled = false }};
-const int num_kill_switches = sizeof(kill_switch_states)/sizeof(*kill_switch_states);
-static_assert(sizeof(kill_switch_states)/sizeof(*kill_switch_states) <= 32, "Too many kill switches defined");
+struct kill_switch_state kill_switch_states[NUM_KILL_SWITCHES] = { [0 ... NUM_KILL_SWITCHES - 1] = { .enabled =
+                                                                                                         false } };
+const int num_kill_switches = sizeof(kill_switch_states) / sizeof(*kill_switch_states);
+static_assert(sizeof(kill_switch_states) / sizeof(*kill_switch_states) <= 32, "Too many kill switches defined");
 
-const char * safety_lookup_killswitch_id(uint32_t switch_id){
-    assert(switch_id < sizeof(killswitch_id_list)/sizeof(*killswitch_id_list));
+const char* safety_lookup_killswitch_id(uint32_t switch_id) {
+    assert(switch_id < sizeof(killswitch_id_list) / sizeof(*killswitch_id_list));
     return killswitch_id_list[switch_id];
 }
 
-const char * safety_lookup_fault_id(uint32_t fault_id) {
-    return (fault_id < sizeof(fault_string_list)/sizeof(*fault_string_list) ? fault_string_list[fault_id] : "UNKNOWN");
+const char* safety_lookup_fault_id(uint32_t fault_id) {
+    return (fault_id < sizeof(fault_string_list) / sizeof(*fault_string_list) ? fault_string_list[fault_id]
+                                                                              : "UNKNOWN");
 }

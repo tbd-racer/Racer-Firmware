@@ -8,7 +8,8 @@
  *
  * If a valid boot2 image is present in FLASH_APP, this will not return.
  *
- * @param mark_watchdog_reset True if scratch[4] should be filled with WATCHDOG_NON_REBOOT_MAGIC, False if filled with WATCHDOG_BOOTLOADER_NON_REBOOT_MAGIC
+ * @param mark_watchdog_reset True if scratch[4] should be filled with WATCHDOG_NON_REBOOT_MAGIC, False if filled with
+ * WATCHDOG_BOOTLOADER_NON_REBOOT_MAGIC
  */
 void boot_app_attempt(bool mark_watchdog_reset);
 

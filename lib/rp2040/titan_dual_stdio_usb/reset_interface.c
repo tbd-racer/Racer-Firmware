@@ -3,18 +3,16 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#include "pico/bootrom.h"
 #include "tusb.h"
 
-#include "pico/bootrom.h"
-
-#if PICO_STDIO_USB_ENABLE_RESET_VIA_VENDOR_INTERFACE && !(PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL ||   \
+#if PICO_STDIO_USB_ENABLE_RESET_VIA_VENDOR_INTERFACE && !(PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL || \
                                                           PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_FLASH_BOOT)
 #warning PICO_STDIO_USB_ENABLE_RESET_VIA_VENDOR_INTERFACE has been selected but neither PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL nor PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_FLASH_BOOT have been selected.
 #endif
 
 #if PICO_STDIO_USB_ENABLE_RESET_VIA_VENDOR_INTERFACE
 #include "device/usbd_pvt.h"
-
 #include "hardware/watchdog.h"
 #include "pico/stdio_usb/reset_interface.h"
 
@@ -22,9 +20,7 @@ static uint8_t itf_num;
 
 static void resetd_init(void) {}
 
-static void resetd_reset(uint8_t __unused rhport) {
-    itf_num = 0;
-}
+static void resetd_reset(uint8_t __unused rhport) { itf_num = 0; }
 
 static uint16_t resetd_open(uint8_t __unused rhport, tusb_desc_interface_t const *itf_desc, uint16_t max_len) {
     TU_VERIFY(TUSB_CLASS_VENDOR_SPECIFIC == itf_desc->bInterfaceClass &&
@@ -42,8 +38,9 @@ static uint16_t resetd_open(uint8_t __unused rhport, tusb_desc_interface_t const
 // Support for parameterized reset via vendor interface control request
 static bool resetd_control_xfer_cb(uint8_t __unused rhport, uint8_t stage, tusb_control_request_t const *request) {
     // nothing to do with DATA & ACK stage
-    if (stage != CONTROL_STAGE_SETUP)
+    if (stage != CONTROL_STAGE_SETUP) {
         return true;
+    }
 
     if (request->wIndex == itf_num) {
 #if PICO_STDIO_USB_RESET_INTERFACE_SUPPORT_RESET_TO_BOOTSEL

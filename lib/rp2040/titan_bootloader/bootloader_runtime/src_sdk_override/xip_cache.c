@@ -1,4 +1,5 @@
 #include "hardware/xip_cache.h"
+
 #include "hardware/structs/xip.h"
 // For barrier macros:
 #include "hardware/sync.h"
@@ -18,7 +19,11 @@ typedef enum {
 #endif
 
 // Used to ensure subsequent accesses observe the new state of the maintained cache lines
-#define __post_maintenance_barrier() do {__dsb(); __isb();} while (0)
+#define __post_maintenance_barrier() \
+    do {                             \
+        __dsb();                     \
+        __isb();                     \
+    } while (0)
 
 // All functions in this file are marked non-flash, even though they themselves may be executed
 // safely from flash, because they are likely to be called during a flash programming operation
@@ -37,7 +42,8 @@ __force_inline static void check_xip_offset_range(uintptr_t start_offset, uintpt
 
 #if !PICO_RP2040
 // Generic code for RP2350-style caches: apply a maintenance operation to a range of offsets
-static void __no_inline_not_in_flash_func(xip_cache_maintain)(uintptr_t start_offset, uintptr_t size_bytes, cache_op_t op) {
+static void __no_inline_not_in_flash_func(xip_cache_maintain)(uintptr_t start_offset, uintptr_t size_bytes,
+                                                              cache_op_t op) {
     check_xip_offset_range(start_offset, size_bytes);
     valid_params_if(HARDWARE_XIP_CACHE, (start_offset & (XIP_CACHE_LINE_SIZE - 1u)) == 0);
     valid_params_if(HARDWARE_XIP_CACHE, (size_bytes & (XIP_CACHE_LINE_SIZE - 1u)) == 0);
@@ -45,7 +51,7 @@ static void __no_inline_not_in_flash_func(xip_cache_maintain)(uintptr_t start_of
 
     uintptr_t end = start_offset + size_bytes;
     for (uintptr_t offset = start_offset; offset < end; offset += XIP_CACHE_LINE_SIZE) {
-        *(io_wo_8 *) (XIP_MAINTENANCE_BASE + offset + (uintptr_t)op) = 0;
+        *(io_wo_8 *)(XIP_MAINTENANCE_BASE + offset + (uintptr_t)op) = 0;
     }
     __post_maintenance_barrier();
 }
@@ -106,4 +112,3 @@ void __no_inline_not_in_flash_func(xip_cache_pin_range)(uintptr_t start_offset, 
     xip_cache_maintain(start_offset, size_bytes, XIP_CACHE_PIN_AT_ADDRESS);
 }
 #endif
-

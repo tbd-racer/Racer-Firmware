@@ -16,9 +16,9 @@
 //=============================================================================
 
 //-----------------------------------------------------------------------------
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 //-----------------------------------------------------------------------------
 /// @cond 0
@@ -29,10 +29,6 @@ extern "C" {
 /**INDENT-ON**/
 /// @endcond
 //-----------------------------------------------------------------------------
-
-
-
-
 
 #ifndef CRC16CMS_NOTABLE
 /*! @brief Compute a byte stream with CRC16-CMS with a table
@@ -54,10 +50,6 @@ uint16_t ComputeCRC16CMS(const uint8_t* data, size_t size);
 uint16_t ComputeCRC16CMS(const uint8_t* data, size_t size);
 
 #endif
-
-
-
-
 
 //-----------------------------------------------------------------------------
 /// @cond 0

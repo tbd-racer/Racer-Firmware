@@ -1,17 +1,15 @@
 #include "driver/ssd1306.h"
 
-#include "driver/async_i2c.h"
-#include "pico/time.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>  // For memcpy
 
+#include "driver/async_i2c.h"
+#include "pico/time.h"
+
 #define SSD1306_I2C_INST __CONCAT(i2c, SSD1306_I2C_PORT)
 
-void ssd1306_Reset(void) {
-    /* for I2C - do nothing */
-}
+void ssd1306_Reset(void) { /* for I2C - do nothing */ }
 
 // Send a byte to the command register
 void ssd1306_WriteCommand(uint8_t byte) {
@@ -182,8 +180,7 @@ void ssd1306_DrawPixel(uint8_t x, uint8_t y, SSD1306_COLOR color) {
     // Draw in the right color
     if (color == White) {
         SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] |= 1 << (y % 8);
-    }
-    else {
+    } else {
         SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] &= ~(1 << (y % 8));
     }
 }
@@ -198,8 +195,9 @@ char ssd1306_WriteChar(char ch, FontDef Font, SSD1306_COLOR color) {
     uint32_t i, b, j;
 
     // Check if character is valid
-    if (ch < 32 || ch > 126)
+    if (ch < 32 || ch > 126) {
         return 0;
+    }
 
     // Check remaining space on current line
     if (SSD1306_WIDTH < (SSD1306.CurrentX + Font.FontWidth) || SSD1306_HEIGHT < (SSD1306.CurrentY + Font.FontHeight)) {
@@ -212,10 +210,9 @@ char ssd1306_WriteChar(char ch, FontDef Font, SSD1306_COLOR color) {
         b = Font.data[(ch - 32) * Font.FontHeight + i];
         for (j = 0; j < Font.FontWidth; j++) {
             if ((b << j) & 0x8000) {
-                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR) color);
-            }
-            else {
-                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR) !color);
+                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR)color);
+            } else {
+                ssd1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR)!color);
             }
         }
     }
@@ -289,17 +286,14 @@ void ssd1306_Polyline(const SSD1306_VERTEX *par_vertex, uint16_t par_size, SSD13
 }
 
 /* Convert Degrees to Radians */
-static float ssd1306_DegToRad(float par_deg) {
-    return par_deg * 3.14 / 180.0;
-}
+static float ssd1306_DegToRad(float par_deg) { return par_deg * 3.14 / 180.0; }
 
 /* Normalize degree to [0;360] */
 static uint16_t ssd1306_NormalizeTo0_360(uint16_t par_deg) {
     uint16_t loc_angle;
     if (par_deg <= 360) {
         loc_angle = par_deg;
-    }
-    else {
+    } else {
         loc_angle = par_deg % 360;
         loc_angle = ((par_deg != 0) ? par_deg : 360);
     }
@@ -325,20 +319,19 @@ void ssd1306_DrawArc(uint8_t x, uint8_t y, uint8_t radius, uint16_t start_angle,
 
     count = (ssd1306_NormalizeTo0_360(start_angle) * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
     approx_segments = (loc_sweep * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
-    approx_degree = loc_sweep / (float) approx_segments;
+    approx_degree = loc_sweep / (float)approx_segments;
     while (count < approx_segments) {
         rad = ssd1306_DegToRad(count * approx_degree);
-        xp1 = x + (int8_t) (sin(rad) * radius);
-        yp1 = y + (int8_t) (cos(rad) * radius);
+        xp1 = x + (int8_t)(sin(rad) * radius);
+        yp1 = y + (int8_t)(cos(rad) * radius);
         count++;
         if (count != approx_segments) {
             rad = ssd1306_DegToRad(count * approx_degree);
-        }
-        else {
+        } else {
             rad = ssd1306_DegToRad(loc_sweep);
         }
-        xp2 = x + (int8_t) (sin(rad) * radius);
-        yp2 = y + (int8_t) (cos(rad) * radius);
+        xp2 = x + (int8_t)(sin(rad) * radius);
+        yp2 = y + (int8_t)(cos(rad) * radius);
         ssd1306_Line(xp1, yp1, xp2, yp2, color);
     }
 
@@ -368,24 +361,23 @@ void ssd1306_DrawArcWithRadiusLine(uint8_t x, uint8_t y, uint8_t radius, uint16_
 
     count = (ssd1306_NormalizeTo0_360(start_angle) * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
     approx_segments = (loc_sweep * CIRCLE_APPROXIMATION_SEGMENTS) / 360;
-    approx_degree = loc_sweep / (float) approx_segments;
+    approx_degree = loc_sweep / (float)approx_segments;
 
     rad = ssd1306_DegToRad(count * approx_degree);
-    uint8_t first_point_x = x + (int8_t) (sin(rad) * radius);
-    uint8_t first_point_y = y - (int8_t) (cos(rad) * radius);
+    uint8_t first_point_x = x + (int8_t)(sin(rad) * radius);
+    uint8_t first_point_y = y - (int8_t)(cos(rad) * radius);
     while (count < approx_segments) {
         rad = ssd1306_DegToRad(count * approx_degree);
-        xp1 = x + (int8_t) (sin(rad) * radius);
-        yp1 = y - (int8_t) (cos(rad) * radius);
+        xp1 = x + (int8_t)(sin(rad) * radius);
+        yp1 = y - (int8_t)(cos(rad) * radius);
         count++;
         if (count != approx_segments) {
             rad = ssd1306_DegToRad(count * approx_degree);
-        }
-        else {
+        } else {
             rad = ssd1306_DegToRad(loc_sweep);
         }
-        xp2 = x + (int8_t) (sin(rad) * radius);
-        yp2 = y - (int8_t) (cos(rad) * radius);
+        xp2 = x + (int8_t)(sin(rad) * radius);
+        yp2 = y - (int8_t)(cos(rad) * radius);
         ssd1306_Line(xp1, yp1, xp2, yp2, color);
     }
 
@@ -504,9 +496,8 @@ void ssd1306_DrawBitmap(uint8_t x, uint8_t y, const unsigned char *bitmap, uint8
         for (uint8_t i = 0; i < w; i++) {
             if (i & 7) {
                 byte <<= 1;
-            }
-            else {
-                byte = (*(const unsigned char *) (&bitmap[j * byteWidth + i / 8]));
+            } else {
+                byte = (*(const unsigned char *)(&bitmap[j * byteWidth + i / 8]));
             }
 
             if (byte & 0x80) {
@@ -528,14 +519,11 @@ void ssd1306_SetDisplayOn(const uint8_t on) {
     if (on) {
         value = 0xAF;  // Display on
         SSD1306.DisplayOn = 1;
-    }
-    else {
+    } else {
         value = 0xAE;  // Display off
         SSD1306.DisplayOn = 0;
     }
     ssd1306_WriteCommand(value);
 }
 
-uint8_t ssd1306_GetDisplayOn() {
-    return SSD1306.DisplayOn;
-}
+uint8_t ssd1306_GetDisplayOn() { return SSD1306.DisplayOn; }

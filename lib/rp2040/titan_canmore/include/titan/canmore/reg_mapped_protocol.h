@@ -121,8 +121,8 @@ extern "C" {
  *   E (Bulk End): Set to 1 if the last transfer in a bulk request, 0 if not last request or not a bulk request
  *   M (Multiword): Set to 1 if multiple data words are being written
  * Count: The number of words to read/write if If bulk request, an increasing counter for the bulk request
- * Reg Address: The 16-bit address for the register to access in little-endian. This is defined by the higher-level protocol
- * Data Word (Only if W=1): The 32-bit word to write in little-endian format
+ * Reg Address: The 16-bit address for the register to access in little-endian. This is defined by the higher-level
+ * protocol Data Word (Only if W=1): The 32-bit word to write in little-endian format
  *
  *
  * Client to Agent Response
@@ -161,20 +161,21 @@ extern "C" {
  *   2: Bulk Request Sequence Error
  *   3: Invalid Register Address
  *   4: Invalid Register Mode (Ex: Trying to write to a read-only register, multiword write across page boundary)
- *   5: Invalid Data (If attempting to write an invalid value, such an invalid command to a register which executes the command)
- * Seq No: The last sequence number received from the agent if successful, or the sequence number the error occurred on (all subsequent requests ignored)
- * Data Word: The 32-bit word read from the register in little-endian if successful, or 0 if an error occurred
+ *   5: Invalid Data (If attempting to write an invalid value, such an invalid command to a register which executes the
+ * command) Seq No: The last sequence number received from the agent if successful, or the sequence number the error
+ * occurred on (all subsequent requests ignored) Data Word: The 32-bit word read from the register in little-endian if
+ * successful, or 0 if an error occurred
  */
 
 union reg_mapped_request_flags {
     uint8_t data;
     struct __attribute__((packed)) {
-        uint8_t write:1;
-        uint8_t bulk_req:1;
-        uint8_t bulk_end:1;
-        uint8_t multiword:1;
-        uint8_t reserved:1;
-        uint8_t mode:3;
+        uint8_t write : 1;
+        uint8_t bulk_req : 1;
+        uint8_t bulk_end : 1;
+        uint8_t multiword : 1;
+        uint8_t reserved : 1;
+        uint8_t mode : 3;
     } f;
 };
 static_assert(sizeof(union reg_mapped_request_flags) == 1, "Struct did not pack properly");

@@ -1,8 +1,8 @@
 #ifndef BQ40Z80_H
 #define BQ40Z80_H
 
-#include "stdint.h"
 #include "pico/stdlib.h"
+#include "stdint.h"
 
 #define BQ_ADDR 0x0B
 
@@ -26,7 +26,7 @@ enum bq_reg_map {
     BQ_READ_CELL_DATE = 0x1B,
     BQ_READ_CELL_SERI = 0x1C,
     BQ_READ_CELL_NAME = 0x21,
-    BQ_READ_GPIO      = 0x48,
+    BQ_READ_GPIO = 0x48,
     BQ_READ_SAFE_ALRT = 0x50,
     BQ_READ_OPER_STAT = 0x54,
     BQ_READ_CHRG_STAT = 0x55,
@@ -42,8 +42,8 @@ enum bq_mac_cmds {
     BQ_MAC_SHTDN_CMD = 0x0010,
 };
 
-//handler for the bq i2c transactions
-// static void bq_handle_i2c_transfer(uint8_t* bq_reg, uint8_t* rx_buf, uint len);
+// handler for the bq i2c transactions
+//  static void bq_handle_i2c_transfer(uint8_t* bq_reg, uint8_t* rx_buf, uint len);
 
 uint8_t bq_init();
 
@@ -53,7 +53,7 @@ uint8_t bq_pack_present();
 // function for determining if the discharge fet is closed
 uint8_t bq_pack_discharging();
 
-//functions for getting readings from the chip
+// functions for getting readings from the chip
 
 // get the pack state of charge as a value between 100 and 0
 uint8_t bq_pack_soc();
