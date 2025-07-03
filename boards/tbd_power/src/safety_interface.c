@@ -3,6 +3,18 @@
 #include "driver/led.h"
 
 #include "safety_interface.h"
+#include "titan/logger.h"
+
+
+remote_kill_switch_states_t remote_kill_switch_states[] = {
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+    REMOTE_KILL_SWITCH_DISABLED,
+};
 
 // ========================================
 // Implementations for External Interface Functions
@@ -57,12 +69,34 @@ void safety_interface_tick(void) {
     // Update the offboard kill switches
     // Offboard starts at 1
     for(int i = 1; i < NUM_KILL_SWITCHES; i++){
-        safety_kill_switch_update(0, false, false);
+
+        if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_ASSERTING) {
+            LOG_INFO("Remote kill switch %d asserting", i);
+            safety_kill_switch_update(i, true, true);
+        }
+        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NOT_ASSERTING) {
+            safety_kill_switch_update(i, false, true);
+        }
+        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NO_CONTACT) {
+            // If no contact, we assume the switch is not asserting
+            safety_kill_switch_update(i, false, true);
+        }
+        else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_DISABLED) {
+            // If disabled, we do not update the switch
+            continue;
+        }
+        // safety_kill_switch_update(0, false, false);
     }
 }
 
 void safety_interface_deinit(void) {
     // TODO: Modify this function to add code to be called during safety_deinit
+}
+
+void set_radio_kill_switch_state(uint32_t switch_id, remote_kill_switch_states_t remote_kill_switch_state) {
+    assert(switch_id < NUM_KILL_SWITCHES);
+    assert(switch_id >= 0);
+    remote_kill_switch_states[switch_id] = remote_kill_switch_state;
 }
 
 

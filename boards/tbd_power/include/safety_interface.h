@@ -33,6 +33,7 @@ static const char * const killswitch_id_list[] = {
     "RADIO_REMOTE_2",
     "RADIO_REMOTE_3",
     "RADIO_REMOTE_4",
+    "RADIO_REMOTE_5",
 };
 
 // TODO: Replace these with the kill switches for the implementation
@@ -44,10 +45,23 @@ enum kill_switch {
     KILL_SWITCH_RADIO_2,
     KILL_SWITCH_RADIO_3,
     KILL_SWITCH_RADIO_4,
+    KILL_SWITCH_RADIO_5,
+    
 
     // Used to automatically calculate number of kill switches
     // This must be the last enum
     NUM_KILL_SWITCHES
 };
+
+typedef enum rm_ks_states {
+    REMOTE_KILL_SWITCH_NO_CONTACT,
+    REMOTE_KILL_SWITCH_ASSERTING,
+    REMOTE_KILL_SWITCH_NOT_ASSERTING,
+    REMOTE_KILL_SWITCH_DISABLED
+} remote_kill_switch_states_t;
+
+void set_radio_kill_switch_state(uint32_t switch_id, remote_kill_switch_states_t remote_kill_switch_state);
+
+
 
 #endif

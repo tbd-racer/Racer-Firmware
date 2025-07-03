@@ -261,10 +261,11 @@ int main() {
       uint8_t id = packet_buffer[0];
       uint8_t stop_request = packet_buffer[1];
       if (stop_request > 0) {
+        led_ros_connected_set(true);
         set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
-        LOG_INFO("Radio kill switch %d asserting", id);
       }
       else {
+        led_ros_connected_set(false);
         set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
       }
     }
