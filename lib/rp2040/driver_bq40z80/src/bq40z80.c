@@ -76,7 +76,7 @@ uint8_t bq_write_only_transfer(uint8_t* tx_buf, uint len){
 uint8_t bq_init() {
     uint8_t retries = 0;
 
-    // Init the wake pin, active high
+    // Init the wake pin, active low
     gpio_init(BMS_WAKE_PIN);
     gpio_set_dir(BMS_WAKE_PIN, GPIO_OUT);
     gpio_put(BMS_WAKE_PIN, 0);

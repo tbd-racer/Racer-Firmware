@@ -7,7 +7,7 @@
 
 // This defines which CAN bus this board is connected into
 // The CAN bus is defined in the corresponding robot definition files (rate, enable FD, etc.)
-#define CAN_BUS_NAME EXTERNAL_CAN
+#define CAN_BUS_NAME INTERNAL_CAN
 #define CAN_BUS_CLIENT_ID_BASE 5
 
 // Define custom client lookup for the bootloader (since we need to detect which board we're on)

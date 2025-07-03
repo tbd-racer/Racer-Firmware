@@ -172,7 +172,7 @@ int main() {
     LOG_INFO("pack %s, mfg %d/%d/%d, SER# %d", bq_pack_info.name, bq_pack_info.mfg_mo,
             bq_pack_info.mfg_day, bq_pack_info.mfg_year, bq_pack_info.serial);
 
-    can_id = 0; // TODO update this from flash
+    can_id = 10; // TODO update this from flash
     if (!transport_can_init(can_id)) {
         // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
         panic("Failed to initialize CAN bus hardware!");
