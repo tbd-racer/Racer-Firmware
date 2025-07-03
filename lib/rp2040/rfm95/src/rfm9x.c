@@ -1,4 +1,4 @@
-#include "rfm95/rfm9x.h"
+#include "driver/rfm9x.h"
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 #include "pico/stdlib.h"

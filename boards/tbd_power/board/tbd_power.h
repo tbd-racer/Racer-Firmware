@@ -2,6 +2,7 @@
 #define BOARDS__TBD_BMS_H_
 
 #include "blocks/rp2040_can_block.h"
+#include "blocks/rfm95_base.h"
 
 #define PICO_TARGET_NAME "tbd_power"
 

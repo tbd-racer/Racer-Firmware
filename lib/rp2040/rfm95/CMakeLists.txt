@@ -1,5 +1,3 @@
-project(rfm95 C)
-
 add_library(rfm95 INTERFACE)
 
 target_sources(rfm95 INTERFACE 
@@ -13,8 +11,7 @@ target_link_libraries(rfm95 INTERFACE
 )   
 
 target_include_directories(rfm95 INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-    $<INSTALL_INTERFACE:include/>
+    ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
 

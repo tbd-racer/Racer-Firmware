@@ -5,15 +5,15 @@
 #include "driver/led.h"
 // #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead
 // of CAN
+#include "driver/rfm9x.h"
 #include "micro_ros_pico/transport_usb.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
 #include "ros.h"
 #include "safety_interface.h"
-#include <chassis_msgs/srv/restart_power_channel.h>
 
-#include "radio.h"
+#include <chassis_msgs/srv/restart_power_channel.h>
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -191,13 +191,13 @@ int main() {
   gpio_put(NANO_PWR_CTL_PIN, 1);
 
   // Prepare the radio connection
-  spi_init(spi1, 2000 * 2000);
+  spi_init(spi1, RADIO_SPI_BAUDRATE);
   spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
   gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
   gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
   gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
-  
-  if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, 915000000)) {
+
+  if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, RADIO_FREQUENCY)) {
     LOG_INFO("Radio initialization failed!\n");
     return -1;
   }

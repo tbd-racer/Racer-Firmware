@@ -3,7 +3,7 @@
 #include <pico/rand.h>
 #include <pico/stdio.h>
 #include <pico/stdlib.h>
-#include <rfm95/rfm9x.h>
+#include <driver/rfm9x.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -15,7 +15,7 @@ rfm9x_t radio;
 int main() {
 
   // setup hardware spi 0
-  spi_init(spi0, RADIO_SPI_FREQ);
+  spi_init(spi0, RADIO_SPI_BAUDRATE);
   spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
   gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
   gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
@@ -34,13 +34,14 @@ int main() {
 
   // Initialize RFM95 radio
   if (!rfm9x_init(&radio, spi0, RADIO_CS_PIN, RADIO_RST_PIN,
-                  RADIO_FREQ_MHZ * 1000000)) {
+                  RADIO_FREQUENCY)) {
     return -1;
   }
 
-  // Configure radio parameters to match Python example
-  rfm9x_set_spreading_factor(&radio, 8);      // SF8
-  rfm9x_set_signal_bandwidth(&radio, 125000); // 125kHz
+  // Configure radio parameters
+  rfm9x_set_spreading_factor(&radio, RADIO_SPREADING_FACTOR);
+  rfm9x_set_signal_bandwidth(&radio, RADIO_SIGNAL_BANDWIDTH);
+  rfm9x_set_coding_rate(&radio, RADIO_CODING_RATE);
 
   // Enter main loop
   uint32_t count = 0;
