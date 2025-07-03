@@ -133,9 +133,10 @@ static void tick_background_tasks() {
 
   // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
   if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
-    gpio_put(mapROSPinToGPIOPin(channel_restart),
-             1);           // Set the channel GPIO high
-    channel_restart = 255; // Reset the channel restart request
+    // Set the channel GPIO high
+    gpio_put(mapROSPinToGPIOPin(channel_restart), 1);
+    // Reset the channel restart request
+    channel_restart = 255;
   }
 }
 
