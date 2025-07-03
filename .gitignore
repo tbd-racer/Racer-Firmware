@@ -60,3 +60,5 @@ build
 /lib/rp2040/micro_ros_pico/libmicroros/
 /lib/rp2040/micro_ros_pico/available_ros2_types
 /lib/rp2040/micro_ros_pico/built_packages
+
+**/.vscode/** 

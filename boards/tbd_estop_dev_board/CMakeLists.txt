@@ -8,7 +8,7 @@ list(APPEND PICO_BOARD_HEADER_DIRS ${BOARD_HEADER_DIR})
 
 # The Target Board
 # This also impacts the upload_tool for automatic device selection
-set(PICO_BOARD tbd_power)
+set(PICO_BOARD estop_dev)
 
 # Include global definitions
 execute_process(COMMAND git rev-parse --show-cdup
@@ -18,38 +18,39 @@ get_filename_component(REPO_DIR "${CMAKE_CURRENT_LIST_DIR}/${relative_path_to_re
 include(${REPO_DIR}/global_defs.cmake)
 
 # Define Project
-project(tbd_power C CXX ASM)
+project(estop_dev C CXX ASM)
 titan_firmware_init()
 
 # Define executable
-file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c")
-add_executable(tbd_power
+file(GLOB_RECURSE SOURCES RELATIVE ${CMAKE_SOURCE_DIR} "src/*.c" "src/*.cpp")
+add_executable(estop_dev
 	${SOURCES}
 )
-target_include_directories(tbd_power PUBLIC include)
+target_include_directories(estop_dev PUBLIC include)
 
 # Set version: major minor (see titan/version.h for more info)
-titan_generate_version_tag(tbd_power 1 0)
+titan_generate_version_tag(estop_dev 1 0)
 
 # Configure pico-sdk
-pico_enable_stdio_uart(tbd_power 1)
-pico_set_program_name(tbd_power "Power Board Firmware")
+pico_enable_stdio_usb(estop_dev 1)
+pico_enable_stdio_uart(estop_dev 0)
+pico_set_program_name(estop_dev "Power Board Firmware")
 
 # Enable the 'make upload' and 'make serial' commands for project
-# titan_use_upload_tool(tbd_power)
-# titan_enable_bootloader(tbd_power can ${BOARD_HEADER_DIR})
+# titan_use_upload_tool(estop_dev)
+# titan_enable_bootloader(estop_dev can ${BOARD_HEADER_DIR})
+
 
 # Define linking and targets
-pico_add_extra_outputs(tbd_power)
-target_link_libraries(tbd_power PUBLIC
-	driver_ads7828    # ADC library for power board
-	driver_async_i2c  # Async I2C Driver for the display
-	driver_led		  # Status LED Support
-
-	titan_logger	  # A nice little logging library
-	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
-	micro_ros_usb	  # Micro ros support (supports _can, _usb, _eth)
-	
+pico_add_extra_outputs(estop_dev)
+target_link_libraries(estop_dev PUBLIC
 	pico_stdlib		  # Pico SDK Standard Library
+	pico_stdio_usb
+	pico_rand
+	hardware_spi
+	hardware_gpio
+	hardware_timer
 	rfm95
 )
+
+target_compile_features(estop_dev PUBLIC cxx_std_23)

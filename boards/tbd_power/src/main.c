@@ -1,17 +1,18 @@
 #include "pico/stdlib.h"
 
-#include "driver/async_i2c.h"
 #include "driver/ads7828.h"
 // #include "driver/canbus.h" CRH: USB transport is used instead of CAN
 #include "driver/led.h"
-// #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead of CAN
+// #include "micro_ros_pico/transport_can.h" CRH: USB transport is used instead
+// of CAN
+#include "driver/rfm9x.h"
 #include "micro_ros_pico/transport_usb.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
-
 #include "ros.h"
 #include "safety_interface.h"
+
 #include <chassis_msgs/srv/restart_power_channel.h>
 
 #undef LOGGING_UNIT_NAME
@@ -24,7 +25,11 @@
 #define LED_UPTIME_INTERVAL_MS 250
 #define CHANNEL_RESTART_TIME_MS 1000
 
-bool power_channel_restart_active = false; // Flag to indicate if a channel restart is currently active
+// rfm radio for estop communication
+rfm9x_t radio;
+
+// Flag to indicate if a channel restart is currently active
+bool power_channel_restart_active = false; 
 
 // Initialize all to nil time
 // For background timers, they will fire immediately
@@ -42,194 +47,239 @@ absolute_time_t next_channel_restart = {0};
  *
  * This will also raise a fault if timers are missed
  *
- * @param next_fire_ptr A pointer to the absolute_time_t holding the time the timer should next fire
+ * @param next_fire_ptr A pointer to the absolute_time_t holding the time the
+ * timer should next fire
  * @param interval_ms The interval the timer fires at
- * @return true The timer has fired, any action which was waiting for this timer should occur
+ * @return true The timer has fired, any action which was waiting for this timer
+ * should occur
  * @return false The timer has not fired
  */
-static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bool error_on_miss) {
-    absolute_time_t time_tmp = *next_fire_ptr;
+static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms,
+                        bool error_on_miss) {
+  absolute_time_t time_tmp = *next_fire_ptr;
+  if (time_reached(time_tmp)) {
+    bool is_first_fire = is_nil_time(time_tmp);
+    time_tmp = delayed_by_ms(time_tmp, interval_ms);
     if (time_reached(time_tmp)) {
-        bool is_first_fire = is_nil_time(time_tmp);
+      unsigned int i = 0;
+      while (time_reached(time_tmp)) {
         time_tmp = delayed_by_ms(time_tmp, interval_ms);
-        if (time_reached(time_tmp)) {
-            unsigned int i = 0;
-            while (time_reached(time_tmp)) {
-                time_tmp = delayed_by_ms(time_tmp, interval_ms);
-                i++;
-            }
-            if (!is_first_fire) {
-                LOG_WARN("Missed %u runs of %s timer 0x%p", i, (error_on_miss ? "critical" : "non-critical"),
-                         next_fire_ptr);
-                if (error_on_miss)
-                    safety_raise_fault(FAULT_TIMER_MISSED);
-            }
-        }
-        *next_fire_ptr = time_tmp;
-        return true;
+        i++;
+      }
+      if (!is_first_fire) {
+        LOG_WARN("Missed %u runs of %s timer 0x%p", i,
+                 (error_on_miss ? "critical" : "non-critical"), next_fire_ptr);
+        if (error_on_miss)
+          safety_raise_fault(FAULT_TIMER_MISSED);
+      }
     }
-    else {
-        return false;
-    }
+    *next_fire_ptr = time_tmp;
+    return true;
+  } else {
+    return false;
+  }
 }
 
-static void start_ros_timers(){
-    next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
-    next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
-    next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
+static void start_ros_timers() {
+  next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
+  next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
+  next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
 }
 
 int mapROSPinToGPIOPin(int pin) {
-    // Map ROS pin numbers to GPIO pin numbers
-    switch(pin) {
-        case chassis_msgs__srv__RestartPowerChannel_Request__LIDAR_CHANNEL: return LIDR_PWR_CTL_PIN;
-        case chassis_msgs__srv__RestartPowerChannel_Request__JETSON_CHANNEL: return AGX_PWR_CTL_PIN;
-        case chassis_msgs__srv__RestartPowerChannel_Request__AUX_CHANNEL: return NANO_PWR_CTL_PIN;
-        case chassis_msgs__srv__RestartPowerChannel_Request__NETWORK_CHANNEL: return NET_PWR_CTL_PIN;
-        default: return 255; // Invalid pin, return an invalid GPIO pin
-    }
+  // Map ROS pin numbers to GPIO pin numbers
+  switch (pin) {
+  case chassis_msgs__srv__RestartPowerChannel_Request__LIDAR_CHANNEL:
+    return LIDR_PWR_CTL_PIN;
+  case chassis_msgs__srv__RestartPowerChannel_Request__JETSON_CHANNEL:
+    return AGX_PWR_CTL_PIN;
+  case chassis_msgs__srv__RestartPowerChannel_Request__AUX_CHANNEL:
+    return NANO_PWR_CTL_PIN;
+  case chassis_msgs__srv__RestartPowerChannel_Request__NETWORK_CHANNEL:
+    return NET_PWR_CTL_PIN;
+  default:
+    return 255; // Invalid pin, return an invalid GPIO pin
+  }
 }
 
 /**
  * @brief Ticks all ROS related code
  */
 static void tick_ros_tasks() {
-    if (timer_ready(&next_heartbeat, HEARTBEAT_TIME_MS, true)) {
-        // RCSOFTRETVCHECK is used as important logs should occur within ros.c,
-        RCSOFTRETVCHECK(ros_heartbeat_pulse(CAN_BUS_CLIENT_ID));
-    }
+  if (timer_ready(&next_heartbeat, HEARTBEAT_TIME_MS, true)) {
+    // RCSOFTRETVCHECK is used as important logs should occur within ros.c,
+    RCSOFTRETVCHECK(ros_heartbeat_pulse(CAN_BUS_CLIENT_ID));
+  }
 
-    // send the firmware status updates
-    if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
-        RCSOFTRETVCHECK(ros_update_firmware_status(CAN_BUS_CLIENT_ID));
-    }
+  // send the firmware status updates
+  if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
+    RCSOFTRETVCHECK(ros_update_firmware_status(CAN_BUS_CLIENT_ID));
+  }
 
-    // Send killswitch updates
-    if(timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)){
-        RCSOFTRETVCHECK(ros_update_killswitches());
-    }
-
+  // Send killswitch updates
+  if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
+    RCSOFTRETVCHECK(ros_update_killswitches());
+  }
 }
 
 static void tick_background_tasks() {
-    // canbus_tick(); CRH: USB transport is used instead of CAN
+  // canbus_tick(); CRH: USB transport is used instead of CAN
 
-    // CRH: USB transport is used instead of CAN
-    // if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
-    //     // update the RGB led
-    //     led_network_online_set(canbus_check_online());
-    // }
+  // CRH: USB transport is used instead of CAN
+  // if (timer_ready(&next_led_update, LED_UPTIME_INTERVAL_MS, false)) {
+  //     // update the RGB led
+  //     led_network_online_set(canbus_check_online());
+  // }
 
-    // 255 means no channel restart requested
-    if(channel_restart != 255){
-        if(!power_channel_restart_active) {
-            next_channel_restart = make_timeout_time_ms(CHANNEL_RESTART_TIME_MS);
-            power_channel_restart_active = true;
-            gpio_put(mapROSPinToGPIOPin(channel_restart), 0); // Set the channel GPIO low
-        }
+  // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
+  if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
+    // Set the channel GPIO high
+    gpio_put(mapROSPinToGPIOPin(channel_restart), 1);
+    // Reset the channel restart request
+    channel_restart = 255;
+  }
+}
 
-        // Wait for CHANNEL_RESTART_TIME_MS to allow capacitors to discharge
-        if (timer_ready(&next_channel_restart, CHANNEL_RESTART_TIME_MS, false)) {
-            gpio_put(mapROSPinToGPIOPin(channel_restart), 1); // Set the channel GPIO high
-            channel_restart = 255; // Reset the channel restart request
-        }
-    }
+static void handle_radio_packets(uint8_t packet_buffer[]){
+  uint8_t id = packet_buffer[0];
+  uint8_t stop_request = packet_buffer[1];
+  if (stop_request > 0) {
+    led_ros_connected_set(true);
+    set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
+  }
+  else {
+    led_ros_connected_set(false);
+    set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
+  }
 }
 
 int main() {
-    // Initialize stdio
-    stdio_init_all();
-    LOG_INFO("%s", FULL_BUILD_TAG);
+  // Initialize stdio
+  stdio_init_all();
+  LOG_INFO("%s", FULL_BUILD_TAG);
 
-    // Perform all initializations
-    // NOTE: Safety must be the first thing up after stdio, so the watchdog will be enabled
-    safety_setup();
-    led_init();
-    micro_ros_init_error_handling();
-    async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
-    ads7828_init();
+  // Perform all initializations
+  // NOTE: Safety must be the first thing up after stdio, so the watchdog will
+  // be enabled
+  safety_setup();
+  led_init();
+  micro_ros_init_error_handling();
+  async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
+  ads7828_init();
 
-    gpio_init(PACK1_ACTIVE_PIN);
-    gpio_set_dir(PACK1_ACTIVE_PIN, GPIO_IN);
 
-    gpio_init(PACK2_ACTIVE_PIN);
-    gpio_set_dir(PACK2_ACTIVE_PIN, GPIO_IN);
+  // Now pull up the GPIO
+  gpio_init(PACK1_ACTIVE_PIN);
+  gpio_set_dir(PACK1_ACTIVE_PIN, GPIO_IN);
 
-    gpio_init(AGX_PWR_CTL_PIN);
-    gpio_set_dir(AGX_PWR_CTL_PIN, GPIO_OUT);
-    gpio_put(AGX_PWR_CTL_PIN, 1);
+  gpio_init(PACK2_ACTIVE_PIN);
+  gpio_set_dir(PACK2_ACTIVE_PIN, GPIO_IN);
 
-    gpio_init(LIDR_PWR_CTL_PIN);
-    gpio_set_dir(LIDR_PWR_CTL_PIN, GPIO_OUT);
-    gpio_put(LIDR_PWR_CTL_PIN, 1);
+  gpio_init(AGX_PWR_CTL_PIN);
+  gpio_set_dir(AGX_PWR_CTL_PIN, GPIO_OUT);
+  gpio_put(AGX_PWR_CTL_PIN, 1);
 
-    gpio_init(NET_PWR_CTL_PIN);
-    gpio_set_dir(NET_PWR_CTL_PIN, GPIO_OUT);
-    gpio_put(NET_PWR_CTL_PIN, 1);
+  gpio_init(LIDR_PWR_CTL_PIN);
+  gpio_set_dir(LIDR_PWR_CTL_PIN, GPIO_OUT);
+  gpio_put(LIDR_PWR_CTL_PIN, 1);
 
-    gpio_init(NANO_PWR_CTL_PIN);
-    gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
-    gpio_put(NANO_PWR_CTL_PIN, 1);
+  gpio_init(NET_PWR_CTL_PIN);
+  gpio_set_dir(NET_PWR_CTL_PIN, GPIO_OUT);
+  gpio_put(NET_PWR_CTL_PIN, 1);
 
-    sleep_ms(1000);
-    safety_tick();
+  gpio_init(NANO_PWR_CTL_PIN);
+  gpio_set_dir(NANO_PWR_CTL_PIN, GPIO_OUT);
+  gpio_put(NANO_PWR_CTL_PIN, 1);
 
-    // if (!transport_can_init(CAN_BUS_CLIENT_ID)) { CRH: USB transport is used instead of CAN
-    //     // No point in continuing onwards from here, if we can't initialize CAN hardware might as well panic and retry
-    //     panic("Failed to initialize CAN bus hardware!");
-    // }
-    transport_usb_init(); // CRH: USB transport is used instead of CAN
+  // Prepare the radio connection
+  spi_init(spi1, RADIO_SPI_BAUDRATE);
+  spi_set_format(spi1, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+  gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_MOSI_PIN, GPIO_FUNC_SPI);
+  gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
 
-    // Enter main loop
-    // This is split into two sections of timers
-    // Those running with ROS, and those in the background
-    // Note that both types of timers will need to conform to the minimal delay time, as there is around
-    //   20ms of time worst case before the watchdog fires (as the ROS timeout is 30ms)
-    // Meaning, don't block, either poll it in the background task or send it to an interrupt
-    bool ros_initialized = false;
-    while(true) {
-        // Do background tasks
-        tick_background_tasks();
+  if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, RADIO_FREQUENCY)) {
+    LOG_INFO("Radio initialization failed!\n");
+    return -1;
+  }
 
-        // Handle ROS state logic
-        if(is_ros_connected()) {
-            if(!ros_initialized) {
-                LOG_INFO("ROS connected");
+  rfm9x_set_spreading_factor(&radio, RADIO_SPREADING_FACTOR);
+  rfm9x_set_signal_bandwidth(&radio, RADIO_SIGNAL_BANDWIDTH);
+  rfm9x_set_coding_rate(&radio, RADIO_CODING_RATE);
 
-                // Lower all ROS related faults as we've got a new ROS context
-                safety_lower_fault(FAULT_ROS_ERROR);
+  rfm9x_listen(&radio);
 
-                if(ros_init(0) == RCL_RET_OK) { // TODO supply board serial number here
-                    ros_initialized = true;
-                    led_ros_connected_set(true);
-                    safety_init();
-                    start_ros_timers();
-                } else {
-                    LOG_ERROR("ROS failed to initialize.");
-                    ros_fini();
-                }
-            } else {
-                ros_spin_executor();
-                tick_ros_tasks();
-            }
-        } else if(ros_initialized){
-            LOG_INFO("Lost connection to ROS");
-            ros_fini();
-            safety_deinit();
-            led_ros_connected_set(false);
+  sleep_ms(1000);
+  safety_tick();
 
-            ros_initialized = false;
+  // if (!transport_can_init(CAN_BUS_CLIENT_ID)) { CRH: USB transport is used
+  // instead of CAN
+  //     // No point in continuing onwards from here, if we can't initialize CAN
+  //     hardware might as well panic and retry panic("Failed to initialize CAN
+  //     bus hardware!");
+  // }
+  transport_usb_init(); // CRH: USB transport is used instead of CAN
+
+  // Enter main loop
+  // This is split into two sections of timers
+  // Those running with ROS, and those in the background
+  // Note that both types of timers will need to conform to the minimal delay
+  // time, as there is around
+  //   20ms of time worst case before the watchdog fires (as the ROS timeout is
+  //   30ms)
+  // Meaning, don't block, either poll it in the background task or send it to
+  // an interrupt
+  bool ros_initialized = false;
+  while (true) {
+    // Do background tasks
+    tick_background_tasks();
+
+    // Handle ROS state logic
+    if (is_ros_connected()) {
+      if (!ros_initialized) {
+        LOG_INFO("ROS connected");
+
+        // Lower all ROS related faults as we've got a new ROS context
+        safety_lower_fault(FAULT_ROS_ERROR);
+
+        if (ros_init(0) == RCL_RET_OK) { // TODO supply board serial number here
+          ros_initialized = true;
+          led_ros_connected_set(true);
+          safety_init();
+          start_ros_timers();
         } else {
-            if (time_reached(next_connect_ping)) {
-                ros_ping();
-                next_connect_ping = make_timeout_time_ms(UROS_CONNECT_PING_TIME_MS);
-            }
+          LOG_ERROR("ROS failed to initialize.");
+          ros_fini();
         }
+      } else {
+        ros_spin_executor();
+        tick_ros_tasks();
+      }
+    } else if (ros_initialized) {
+      LOG_INFO("Lost connection to ROS");
+      ros_fini();
+      safety_deinit();
+      led_ros_connected_set(false);
 
-        // Tick safety
-        safety_tick();
-
+      ros_initialized = false;
+    } else {
+      if (time_reached(next_connect_ping)) {
+        ros_ping();
+        next_connect_ping = make_timeout_time_ms(UROS_CONNECT_PING_TIME_MS);
+      }
     }
 
-    return 0;
+    // handle radio traffic
+    uint8_t packet_buffer[256];
+    int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer),
+                                 true, false, false, 100);
+    if (received > 0) {
+      handle_radio_packets(packet_buffer);
+    }
+
+    // Tick safety
+    safety_tick();
+  }
+
+  return 0;
 }

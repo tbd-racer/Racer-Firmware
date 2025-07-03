@@ -3,6 +3,7 @@
 
 #include "pico/stdlib.h"
 #include "stdint.h"
+#include "driver/async_i2c.h"
 
 #define ADS7828_I2C_PORT PERIPH_I2C
 #define ADS7828_I2C_ADDR 0b10010000

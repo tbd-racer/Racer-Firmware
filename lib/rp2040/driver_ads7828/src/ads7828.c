@@ -38,6 +38,8 @@ uint8_t ads7828_init()
     rx_buf[1] = ADS7828_READING_INVL & 0xFF;
 
     ads7828_read_channel(0);
+
+    return 0;
 }
 
 uint8_t make_channel_command(uint8_t channel)
