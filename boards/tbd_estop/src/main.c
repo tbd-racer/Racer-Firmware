@@ -119,8 +119,8 @@ int main() {
     // Initialize stdio
     stdio_init_all();
 
-    // wait for usb serial to be ready
-    while (!stdio_usb_connected() && to_ms_since_boot(get_absolute_time()) < 10000) {
+    // wait for either usb serial, a button press or 10s
+    while (to_ms_since_boot(get_absolute_time()) < 10000) {
         LOG_INFO("Waiting for serial...");
 
         commands[0].data = 0u;
@@ -134,6 +134,12 @@ int main() {
         ws2812_strip_set(commands);
 
         sleep_ms(250);
+
+        // handle exit conditions
+        if(stdio_usb_connected() || kill_button_irq_trigger){
+            kill_button_irq_trigger = false;
+            break;
+        }
     }
 
     LOG_INFO("Initializing radio");
@@ -214,8 +220,10 @@ int main() {
 
         // Send a radio packet when ready
         if (timer_ready(&next_radio_xmit, 100, true)) {
-            message[0] = REM_KILLSWITCH_ID;              // ID byte
-            message[1] = (uint8_t)kill_state_asserting;  // status
+            // ID byte
+            message[0] = REM_KILLSWITCH_ID;
+            // status byte = 000(required)000(is_asserting)
+            message[1] = ((uint8_t)require_kill << 4) & (uint8_t)kill_state_asserting;
 
             // Send the message
             rfm9x_send(&radio, message, 2, false);
