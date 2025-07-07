@@ -116,6 +116,14 @@ int main() {
     // Setup the button LED
     ws2812_init(pio0, 0, BUTTON_LED_PIN, BUTTON_NUM_LEDS);
 
+    // setup button pin
+    gpio_init(BUTTON_STAT_PIN);
+    gpio_set_dir(BUTTON_STAT_PIN, GPIO_IN);
+    gpio_pull_up(BUTTON_STAT_PIN);
+
+    // config the GPIO IRQ to help with the button
+    gpio_set_irq_enabled_with_callback(BUTTON_STAT_PIN, GPIO_IRQ_EDGE_RISE, true, &gpio_irq);
+
     // Initialize stdio
     stdio_init_all();
 
@@ -136,7 +144,7 @@ int main() {
         sleep_ms(250);
 
         // handle exit conditions
-        if(stdio_usb_connected() || kill_button_irq_trigger){
+        if (stdio_usb_connected() || kill_button_irq_trigger) {
             kill_button_irq_trigger = false;
             break;
         }
@@ -150,14 +158,6 @@ int main() {
     gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
     spi_init(spi0, RADIO_SPI_BAUDRATE);
     spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-
-    // setup button pin
-    gpio_init(BUTTON_STAT_PIN);
-    gpio_set_dir(BUTTON_STAT_PIN, GPIO_IN);
-    gpio_pull_up(BUTTON_STAT_PIN);
-
-    // config the GPIO IRQ to help with the button
-    gpio_set_irq_enabled_with_callback(BUTTON_STAT_PIN, GPIO_IRQ_EDGE_RISE, true, &gpio_irq);
 
     // Initialize RFM95 radio
     if (!rfm9x_init(&radio, spi0, RADIO_CS_PIN, RADIO_RST_PIN, RADIO_FREQUENCY)) {
