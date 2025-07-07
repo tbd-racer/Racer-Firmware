@@ -105,7 +105,7 @@ int main() {
             toggleKillState();
         }
 
-        message[0] = 6;                           // ID byte
+        message[0] = REM_KILLSWITCH_ID;           // ID byte
         message[1] = (uint8_t)kill_state_toggle;  // status
 
         // Send the message

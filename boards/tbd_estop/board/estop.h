@@ -1,6 +1,9 @@
 #ifndef BOARDS__TBD_BMS_H_
 #define BOARDS__TBD_BMS_H_
 
+// ID to set for the switch to use when contacting the power controller
+#define REM_KILLSWITCH_ID 1
+
 #define PICO_TARGET_NAME "tbd_estop"
 
 // Radio configs
