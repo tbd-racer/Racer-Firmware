@@ -31,7 +31,7 @@ enum status_strip_mode {
  * @param pio PIO machine to assign
  * @param sm PIO state machine to assign
  * @param pin Pin connected to pixels
- * @param first_pixel_is_rear True if the firest neopixel is in the rear, false if first in the front
+ * @param first_pixel_is_rear True if the first neopixel is in the rear, false if first in the front
  */
 void status_strip_init(PIO pio, uint sm, uint pin, bool first_pixel_is_rear);
 

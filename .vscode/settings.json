@@ -1,6 +1,18 @@
 {
-    "cmake.sourceDirectory": "/home/coalman321/Racer-Firmware/boards/tbd_power",
+    "cmake.sourceDirectory": "/home/coalman321/Racer-Firmware/boards/tbd_estop",
     "files.associations": {
-        "canbus.h": "c"
+        "canbus.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "transport_usb.h": "c",
+        "ads7828.h": "c",
+        "stdlib.h": "c",
+        "restart_power_channel.h": "c",
+        "restart_power_channel__struct.h": "c",
+        "ros.h": "c",
+        "rmw_microros.h": "c",
+        "random": "c",
+        "dma.h": "c"
     }
 }

@@ -44,9 +44,10 @@ pico_set_program_name(estop "Power Board Firmware")
 # Define linking and targets
 pico_add_extra_outputs(estop)
 target_link_libraries(estop PUBLIC
+	driver_rfm95
+	driver_ws2812
+
 	pico_stdlib		  # Pico SDK Standard Library
 	pico_stdio_usb
 	pico_rand
-	hardware_spi
-	rfm95
 )

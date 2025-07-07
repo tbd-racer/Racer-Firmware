@@ -6,16 +6,18 @@
 // Radio configs
 #include "blocks/rfm95_base.h"
 
+#define BUTTON_NUM_LEDS 1
+
 // Button PINS
 #define BUTTON_STAT_PIN 25
-#define BUTTON_LED_PIN 24  // (CJT) IDK
+#define BUTTON_LED_PIN 1 
 
 // Radio connections
-#define RADIO_MISO_PIN 16
+#define RADIO_MISO_PIN 20
 #define RADIO_MOSI_PIN 19
 #define RADIO_SCK_PIN 18
-#define RADIO_CS_PIN 17
+#define RADIO_CS_PIN 8
 #define RADIO_IRQ_PIN 15
-#define RADIO_RST_PIN 14
+#define RADIO_RST_PIN 9
 
 #endif

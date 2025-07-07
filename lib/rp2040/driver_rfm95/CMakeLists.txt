@@ -1,16 +1,16 @@
-add_library(rfm95 INTERFACE)
+add_library(driver_rfm95 INTERFACE)
 
-target_sources(rfm95 INTERFACE 
+target_sources(driver_rfm95 INTERFACE 
     ${CMAKE_CURRENT_LIST_DIR}/src/rfm9x.c
 )
 
-target_link_libraries(rfm95 INTERFACE
+target_link_libraries(driver_rfm95 INTERFACE
     pico_stdlib
     hardware_spi
     hardware_gpio
 )   
 
-target_include_directories(rfm95 INTERFACE
+target_include_directories(driver_rfm95 INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/include
 )
 

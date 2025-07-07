@@ -45,11 +45,11 @@ target_link_libraries(tbd_power PUBLIC
 	driver_ads7828    # ADC library for power board
 	driver_async_i2c  # Async I2C Driver for the display
 	driver_led		  # Status LED Support
+	driver_rfm95      # RFM 95 radio support
 
 	titan_logger	  # A nice little logging library
 	titan_safety	  # Handles critical code (Watchdog, Kill Switch, Fault Reporting)
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
 	
 	pico_stdlib		  # Pico SDK Standard Library
-	rfm95
 )

@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "hardware/gpio.h"
 #include "hardware/spi.h"
 
 // Internal constants - Register names

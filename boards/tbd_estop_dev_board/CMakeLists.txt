@@ -50,7 +50,7 @@ target_link_libraries(estop_dev PUBLIC
 	hardware_spi
 	hardware_gpio
 	hardware_timer
-	rfm95
+	driver_rfm95
 )
 
 target_compile_features(estop_dev PUBLIC cxx_std_23)
