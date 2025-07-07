@@ -1,43 +1,114 @@
+#include <hardware/gpio.h>
 #include <hardware/pio.h>
+#include <pico/stdio.h>
+#include <pico/stdio_usb.h>
 #include <pico/time.h>
 #include <pico/types.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "driver/rfm9x.h"
 #include "driver/ws2812.h"
 #include "pico/binary_info.h"
-#include "pico/rand.h"
-#include "pico/stdio.h"
-#include "pico/stdlib.h"
+#include "titan/logger.h"
+
+#undef LOGGING_UNIT_NAME
+#define LOGGING_UNIT_NAME "main"
 
 bi_decl(bi_3pins_with_func(RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_SCK_PIN, GPIO_FUNC_SPI));
 bi_decl(bi_1pin_with_name(RADIO_CS_PIN, "RADIO CS"));
 bi_decl(bi_1pin_with_name(BUTTON_LED_PIN, "Kill LED"));
 bi_decl(bi_1pin_with_name(BUTTON_STAT_PIN, "Kill BTN"));
 
+/**
+ * @brief Check if a timer is ready. If so advance it to the next interval.
+ *
+ * This will also raise a fault if timers are missed
+ *
+ * @param next_fire_ptr A pointer to the absolute_time_t holding the time the timer should next fire
+ * @param interval_ms The interval the timer fires at
+ * @return true The timer has fired, any action which was waiting for this timer should occur
+ * @return false The timer has not fired
+ */
+static bool timer_ready(absolute_time_t *next_fire_ptr, uint32_t interval_ms, bool error_on_miss) {
+    absolute_time_t time_tmp = *next_fire_ptr;
+    if (time_reached(time_tmp)) {
+        bool is_first_fire = is_nil_time(time_tmp);
+        time_tmp = delayed_by_ms(time_tmp, interval_ms);
+        if (time_reached(time_tmp)) {
+            unsigned int i = 0;
+            while (time_reached(time_tmp)) {
+                time_tmp = delayed_by_ms(time_tmp, interval_ms);
+                i++;
+            }
+            if (!is_first_fire) {
+                LOG_WARN("Missed %u runs of %s timer 0x%p", i, (error_on_miss ? "critical" : "non-critical"),
+                         next_fire_ptr);
+            }
+        }
+        *next_fire_ptr = time_tmp;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+// timers
+absolute_time_t next_led_tick;
+absolute_time_t next_btn_tick;
+absolute_time_t next_radio_xmit;
+absolute_time_t next_kill_state_change;
+
 rfm9x_t radio;
 union ws2812_command commands[BUTTON_NUM_LEDS];
 
-absolute_time_t next_kill_state_change;
-bool kill_state_toggle = true;
+bool kill_button_irq_trigger = false;
+void gpio_irq(uint gpio, uint32_t events) {
+    if (gpio == BUTTON_STAT_PIN && get_absolute_time() > next_kill_state_change) {
+        // Indicate the IRQ fired, and start a debounce lockout
+        kill_button_irq_trigger = true;
+        next_kill_state_change = make_timeout_time_ms(300);
+    }
+}
 
-void toggleKillState() {
-    kill_state_toggle = !kill_state_toggle;
-    next_kill_state_change = make_timeout_time_ms(300);
-
-    if (kill_state_toggle) {
-        printf("Asserting kill\n");
-
-        commands[0].data = 0u;
-        commands[0].cmd.red = 50u;
-        ws2812_strip_set(commands);
+enum tick_type_t { TICK_TYPE_A, TICK_TYPE_B } tick_type;
+void update_btn_led(bool required, bool kill_asserting) {
+    if (required) {
+        if (kill_asserting) {
+            // If required and killed show solid red
+            commands[0].data = 0u;
+            commands[0].cmd.red = 50u;
+        } else {
+            // if not asserting show solid green
+            commands[0].data = 0u;
+            commands[0].cmd.green = 50u;
+        }
     } else {
-        printf("Clearing kill\n");
+        if (tick_type == TICK_TYPE_A) {
+            // A tick is always yellow
+            commands[0].data = 0u;
+            commands[0].cmd.red = 50u;
+            commands[0].cmd.green = 50u;
+        } else if (kill_asserting && tick_type == TICK_TYPE_B) {
+            // If not required, but killed show red on B tick
+            commands[0].data = 0u;
+            commands[0].cmd.red = 50u;
 
-        commands[0].data = 0u;
-        commands[0].cmd.green = 50u;
-        ws2812_strip_set(commands);
+        } else {
+            // if not required, and active show green on B tick
+            commands[0].data = 0u;
+            commands[0].cmd.green = 50u;
+        }
+    }
+
+    ws2812_strip_set(commands);
+
+    // Handling multi color modes
+    if (tick_type == TICK_TYPE_A) {
+        tick_type = TICK_TYPE_B;
+    } else {
+        tick_type = TICK_TYPE_A;
     }
 }
 
@@ -50,7 +121,7 @@ int main() {
 
     // wait for usb serial to be ready
     while (!stdio_usb_connected() && to_ms_since_boot(get_absolute_time()) < 10000) {
-        printf("Waiting for serial...\n");
+        LOG_INFO("Waiting for serial...");
 
         commands[0].data = 0u;
         commands[0].cmd.red = 50u;
@@ -65,7 +136,7 @@ int main() {
         sleep_ms(250);
     }
 
-    printf("Initializing radio\n");
+    LOG_INFO("Initializing radio");
 
     // setup hardware spi 0
     gpio_set_function(RADIO_MISO_PIN, GPIO_FUNC_SPI);
@@ -79,6 +150,9 @@ int main() {
     gpio_set_dir(BUTTON_STAT_PIN, GPIO_IN);
     gpio_pull_up(BUTTON_STAT_PIN);
 
+    // config the GPIO IRQ to help with the button
+    gpio_set_irq_enabled_with_callback(BUTTON_STAT_PIN, GPIO_IRQ_EDGE_RISE, true, &gpio_irq);
+
     // Initialize RFM95 radio
     if (!rfm9x_init(&radio, spi0, RADIO_CS_PIN, RADIO_RST_PIN, RADIO_FREQUENCY)) {
         panic("failed radio init");
@@ -89,30 +163,66 @@ int main() {
     rfm9x_set_signal_bandwidth(&radio, RADIO_SIGNAL_BANDWIDTH);
     rfm9x_set_coding_rate(&radio, RADIO_CODING_RATE);
 
-    printf("Radio init complete\n");
+    LOG_INFO("Radio init complete");
 
-    // Enter main loop
-    uint32_t count = 0;
     uint8_t message[2];
+    bool kill_state_asserting = false;
+    bool require_kill = true;
 
-    // force toggle the kill to de-assert
-    toggleKillState();
+    uint16_t hold_count = 0;
+
+    // show the correct led state
+    update_btn_led(require_kill, kill_state_asserting);
 
     while (true) {
-        // Read button state and create appropriate message
-        bool button_pressed = gpio_get(BUTTON_STAT_PIN);
-        if (button_pressed && get_absolute_time() > next_kill_state_change) {
-            toggleKillState();
+        if (timer_ready(&next_btn_tick, 100, false)) {
+            // handle a counter for changing kill requirement
+            if (gpio_get(BUTTON_STAT_PIN)) {
+                hold_count++;
+            } else if (hold_count > 0) {
+                hold_count--;
+            }
+
+            // if we hit the threshold toggle the requirement (5s)
+            if (hold_count > 50) {
+                hold_count = 0;
+                require_kill = !require_kill;
+                LOG_INFO("Toggling kill requirement: %s", (require_kill ? "required" : "not required"));
+            }
         }
 
-        message[0] = REM_KILLSWITCH_ID;           // ID byte
-        message[1] = (uint8_t)kill_state_toggle;  // status
+        // Toggling via the button triggers the irq
+        if (kill_button_irq_trigger) {
+            kill_button_irq_trigger = false;
 
-        // Send the message
-        rfm9x_send(&radio, message, 2, false);
+            // toggle the kill state
+            kill_state_asserting = !kill_state_asserting;
 
-        sleep_ms(10);  // Wait 10ms before sending the next packet
-        count++;
+            if (kill_state_asserting) {
+                LOG_INFO("Asserting kill");
+            } else {
+                LOG_INFO("Clearing kill");
+            }
+
+            // Also force an LED update
+            update_btn_led(require_kill, kill_state_asserting);
+        }
+
+        if (timer_ready(&next_led_tick, 250, false)) {
+            update_btn_led(require_kill, kill_state_asserting);
+        }
+
+        // Send a radio packet when ready
+        if (timer_ready(&next_radio_xmit, 100, true)) {
+            message[0] = REM_KILLSWITCH_ID;              // ID byte
+            message[1] = (uint8_t)kill_state_asserting;  // status
+
+            // Send the message
+            rfm9x_send(&radio, message, 2, false);
+        }
+
+        // establish a sleep to conserve power
+        // sleep_ms(1);
     }
 
     return 0;
