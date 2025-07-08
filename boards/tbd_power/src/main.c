@@ -20,6 +20,7 @@
 #define KILLSWITCH_TIME_MS 100
 #define LED_UPTIME_INTERVAL_MS 250
 #define CHANNEL_RESTART_TIME_MS 1000
+#define RADIO_RX_TIMEOUT_MS 20
 
 // rfm radio for estop communication
 rfm9x_t radio;
@@ -136,7 +137,7 @@ static void tick_background_tasks() {
 
 static void handle_radio_packets(uint8_t received, uint8_t packet_buffer[]) {
     // Handle radio kill packets
-    if(packet_buffer[0] == RADIO_KILL_HDR && received == 3){
+    if (packet_buffer[0] == RADIO_KILL_HDR && received == 3) {
         uint8_t id = packet_buffer[1];
         bool is_required = packet_buffer[2] & 0x10;
         bool is_asserting = packet_buffer[2] & 0x01;
@@ -264,7 +265,8 @@ int main() {
 
         // handle radio traffic
         uint8_t packet_buffer[256];
-        int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer), true, false, false, 30);
+        int received =
+            rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer), true, false, false, RADIO_RX_TIMEOUT_MS);
         if (received > 0) {
             handle_radio_packets(received, packet_buffer);
         }
