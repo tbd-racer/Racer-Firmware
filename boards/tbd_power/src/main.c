@@ -139,10 +139,11 @@ static void handle_radio_packets(uint8_t packet_buffer[]) {
     uint8_t id = packet_buffer[1];
     bool is_required = packet_buffer[2] & 0x10;
     bool is_asserting = packet_buffer[2] & 0x01;
-    safety_kill_switch_update(id, is_asserting, is_required);
 
-    if (id != 1) {
-        LOG_INFO("Updated switch id: %x, req: %u, asrt: %u", id, is_required, is_asserting);
+    if (id < NUM_KILL_SWITCHES) {
+        safety_kill_switch_update(id, is_asserting, is_required);
+    } else {
+        LOG_WARN("Unknown switch id: %x, req: %u, asrt: %u", id, is_required, is_asserting);
     }
 }
 

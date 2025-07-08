@@ -31,11 +31,11 @@ static const char* const killswitch_id_list[] = {
 enum kill_switch {
     KILL_SWITCH_PHYSICAL = 0,
     KILL_SWITCH_RADIO_0,
-    KILL_SWITCH_RADIO_1,
-    KILL_SWITCH_RADIO_2,
-    KILL_SWITCH_RADIO_3,
-    KILL_SWITCH_RADIO_4,
-    KILL_SWITCH_RADIO_5,
+    // KILL_SWITCH_RADIO_1,
+    // KILL_SWITCH_RADIO_2,
+    // KILL_SWITCH_RADIO_3,
+    // KILL_SWITCH_RADIO_4,
+    // KILL_SWITCH_RADIO_5,
 
     // Used to automatically calculate number of kill switches
     // This must be the last enum
