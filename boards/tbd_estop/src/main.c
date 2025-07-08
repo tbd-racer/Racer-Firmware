@@ -17,6 +17,11 @@
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
 
+#define BTN_DEBOUNCE_MS 500
+#define BTN_UPDATE_PERIOD_MS 100
+#define LED_UPDATE_PERIOD_MS 250
+#define RAD_UPDATE_PERIOD_MS 100
+
 bi_decl(bi_3pins_with_func(RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_SCK_PIN, GPIO_FUNC_SPI));
 bi_decl(bi_1pin_with_name(RADIO_CS_PIN, "RADIO CS"));
 bi_decl(bi_1pin_with_name(BUTTON_LED_PIN, "Kill LED"));
@@ -69,7 +74,7 @@ void gpio_irq(uint gpio, uint32_t events) {
     if (gpio == BUTTON_STAT_PIN && get_absolute_time() > next_kill_state_change) {
         // Indicate the IRQ fired, and start a debounce lockout
         kill_button_irq_trigger = true;
-        next_kill_state_change = make_timeout_time_ms(300);
+        next_kill_state_change = make_timeout_time_ms(BTN_UPDATE_PERIOD_MS);
     }
 }
 
@@ -182,7 +187,7 @@ int main() {
     update_btn_led(require_kill, kill_state_asserting);
 
     while (true) {
-        if (timer_ready(&next_btn_tick, 100, false)) {
+        if (timer_ready(&next_btn_tick, BTN_UPDATE_PERIOD_MS, false)) {
             // handle a counter for changing kill requirement
             if (gpio_get(BUTTON_STAT_PIN)) {
                 hold_count++;
@@ -215,12 +220,12 @@ int main() {
             update_btn_led(require_kill, kill_state_asserting);
         }
 
-        if (timer_ready(&next_led_tick, 250, false)) {
+        if (timer_ready(&next_led_tick, LED_UPDATE_PERIOD_MS, false)) {
             update_btn_led(require_kill, kill_state_asserting);
         }
 
         // Send a radio packet when ready
-        if (timer_ready(&next_radio_xmit, 100, true)) {
+        if (timer_ready(&next_radio_xmit, RAD_UPDATE_PERIOD_MS, true)) {
             uint8_t message[3] = { RADIO_KILL_HDR, REM_KILLSWITCH_ID,
                                    ((uint8_t)require_kill << 4) | (uint8_t)kill_state_asserting };
 
