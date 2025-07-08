@@ -10,10 +10,10 @@
 #include <rmw_microros/rmw_microros.h>
 #include <std_msgs/msg/int8.h>
 
-#include "hardware/watchdog.h"
 #include "pico/stdlib.h"
 #include "safety_interface.h"
 #include "titan/logger.h"
+#include "titan/safety.h"
 #include "titan/version.h"
 
 #undef LOGGING_UNIT_NAME
@@ -128,8 +128,14 @@ rcl_ret_t ros_update_killswitches(void) {
         } else {
             kill_msg.kill_switch_type = chassis_msgs__msg__KillswitchReport__KILL_SWITCH_TYPE_REMOTE;
         }
-        kill_msg.needs_heartbeat = kill_switch_states[i].needs_update;
-        kill_msg.switch_asserting_kill = kill_switch_states[i].asserting_kill;
+        
+        // All firmware KS are "required" since firmware will always send status
+        kill_msg.needs_heartbeat = true;
+
+        // Asserting takes into account the update requirement and the assertion state
+        kill_msg.switch_asserting_kill =
+            kill_switch_states[i].asserting_kill ||
+            (kill_switch_states[i].needs_update && time_reached(kill_switch_states[i].update_timeout));
 
         // LOG_INFO("Published killswitch %s", killswitch_id_list[i]);
 

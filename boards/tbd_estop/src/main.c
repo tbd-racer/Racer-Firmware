@@ -74,7 +74,7 @@ void gpio_irq(uint gpio, uint32_t events) {
     if (gpio == BUTTON_STAT_PIN && get_absolute_time() > next_kill_state_change) {
         // Indicate the IRQ fired, and start a debounce lockout
         kill_button_irq_trigger = true;
-        next_kill_state_change = make_timeout_time_ms(BTN_UPDATE_PERIOD_MS);
+        next_kill_state_change = make_timeout_time_ms(BTN_DEBOUNCE_MS);
     }
 }
 
