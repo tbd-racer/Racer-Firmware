@@ -134,16 +134,19 @@ static void tick_background_tasks() {
     }
 }
 
-static void handle_radio_packets(uint8_t packet_buffer[]) {
-    // Data starts at index 1 since index 0 is the magic byte
-    uint8_t id = packet_buffer[1];
-    bool is_required = packet_buffer[2] & 0x10;
-    bool is_asserting = packet_buffer[2] & 0x01;
+static void handle_radio_packets(uint8_t received, uint8_t packet_buffer[]) {
+    // Handle radio kill packets
+    if(packet_buffer[0] == RADIO_KILL_HDR && received == 3){
+        uint8_t id = packet_buffer[1];
+        bool is_required = packet_buffer[2] & 0x10;
+        bool is_asserting = packet_buffer[2] & 0x01;
 
-    if (id < NUM_KILL_SWITCHES) {
-        safety_kill_switch_update(id, is_asserting, is_required);
-    } else {
-        LOG_WARN("Unknown switch id: %x, req: %u, asrt: %u", id, is_required, is_asserting);
+        // Ensure ID is valid
+        if (id > 0 && id < NUM_KILL_SWITCHES) {
+            safety_kill_switch_update(id, is_asserting, is_required);
+        } else {
+            LOG_WARN("Unknown switch id: %x, req: %u, asrt: %u", id, is_required, is_asserting);
+        }
     }
 }
 
@@ -262,8 +265,8 @@ int main() {
         // handle radio traffic
         uint8_t packet_buffer[256];
         int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer), true, false, false, 30);
-        if (received > 0 && packet_buffer[0] == RADIO_MAGIC_BYTE) {
-            handle_radio_packets(packet_buffer);
+        if (received > 0) {
+            handle_radio_packets(received, packet_buffer);
         }
 
         // Tick safety

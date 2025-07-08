@@ -221,9 +221,8 @@ int main() {
 
         // Send a radio packet when ready
         if (timer_ready(&next_radio_xmit, 100, true)) {
-            uint8_t message[3] = { RADIO_MAGIC_BYTE, REM_KILLSWITCH_ID, 0x00 };
-            // status byte = 000(required)000(is_asserting)
-            message[2] = ((uint8_t)require_kill << 4) | (uint8_t)kill_state_asserting;
+            uint8_t message[3] = { RADIO_KILL_HDR, REM_KILLSWITCH_ID,
+                                   ((uint8_t)require_kill << 4) | (uint8_t)kill_state_asserting };
 
             // Send the message
             rfm9x_send(&radio, message, 3, false);
