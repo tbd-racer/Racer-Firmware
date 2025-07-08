@@ -12,4 +12,6 @@
 /// SPI configuration
 #define RADIO_SPI_BAUDRATE (2000 * 2000)
 
+#define RADIO_MAGIC_BYTE 0xAF
+
 #endif

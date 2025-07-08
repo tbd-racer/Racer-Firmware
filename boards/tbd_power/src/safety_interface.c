@@ -1,13 +1,10 @@
-#include <assert.h>
-// #include "driver/canbus.h" CRH: USB transport is used instead of CAN
-#include "driver/led.h"
 #include "safety_interface.h"
-#include "titan/logger.h"
 
-remote_kill_switch_states_t remote_kill_switch_states[] = {
-    REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED,
-    REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED, REMOTE_KILL_SWITCH_DISABLED,
-};
+#include <assert.h>
+
+#include "driver/canbus.h"
+#include "driver/led.h"
+#include "titan/logger.h"
 
 // ========================================
 // Implementations for External Interface Functions
@@ -37,53 +34,27 @@ void safety_handle_enable(void) {
 
 void safety_interface_setup(void) {}
 
-// CRH: USB transport is used instead of CAN
-// void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
-//     safety_raise_fault(FAULT_CAN_INTERNAL_ERROR);
-// }
+void safety_handle_can_internal_error(__unused canbus_error_data_t error_data) {
+    safety_raise_fault(FAULT_CAN_INTERNAL_ERROR);
+}
 
-// void safety_handle_can_receive_error(__unused enum canbus_receive_error_codes err_code) {
-//     //safety_raise_fault(FAULT_CAN_RECV_ERROR);
-// }
+void safety_handle_can_receive_error(__unused enum canbus_receive_error_codes err_code) {
+    // safety_raise_fault(FAULT_CAN_RECV_ERROR);
+}
 
 void safety_interface_init(void) {
-    // CRH: USB transport is used instead of CAN
-    // canbus_set_receive_error_cb(safety_handle_can_receive_error);
-    // canbus_set_internal_error_cb(safety_handle_can_internal_error);
+    canbus_set_receive_error_cb(safety_handle_can_receive_error);
+    canbus_set_internal_error_cb(safety_handle_can_internal_error);
 }
 
 void safety_interface_tick(void) {
     // TODO read the KS states in here
     // Read the onboard killswitch
     safety_kill_switch_update(0, false, true);
-
-    // Update the offboard kill switches
-    // Offboard starts at 1
-    for (int i = 1; i < NUM_KILL_SWITCHES; i++) {
-        if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_ASSERTING) {
-            LOG_INFO("Remote kill switch %d asserting", i);
-            safety_kill_switch_update(i, true, true);
-        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NOT_ASSERTING) {
-            safety_kill_switch_update(i, false, true);
-        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_NO_CONTACT) {
-            // If no contact, we assume the switch is not asserting
-            safety_kill_switch_update(i, false, true);
-        } else if (remote_kill_switch_states[i] == REMOTE_KILL_SWITCH_DISABLED) {
-            // If disabled, we do not update the switch
-            continue;
-        }
-        // safety_kill_switch_update(0, false, false);
-    }
 }
 
 void safety_interface_deinit(void) {
     // TODO: Modify this function to add code to be called during safety_deinit
-}
-
-void set_radio_kill_switch_state(uint32_t switch_id, remote_kill_switch_states_t remote_kill_switch_state) {
-    assert(switch_id < NUM_KILL_SWITCHES);
-    assert(switch_id >= 0);
-    remote_kill_switch_states[switch_id] = remote_kill_switch_state;
 }
 
 // ========================================

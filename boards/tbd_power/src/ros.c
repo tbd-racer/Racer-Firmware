@@ -12,6 +12,7 @@
 
 #include "hardware/watchdog.h"
 #include "pico/stdlib.h"
+#include "safety_interface.h"
 #include "titan/logger.h"
 #include "titan/version.h"
 
@@ -129,6 +130,8 @@ rcl_ret_t ros_update_killswitches(void) {
         }
         kill_msg.needs_heartbeat = kill_switch_states[i].needs_update;
         kill_msg.switch_asserting_kill = kill_switch_states[i].asserting_kill;
+
+        // LOG_INFO("Published killswitch %s", killswitch_id_list[i]);
 
         RCSOFTRETCHECK(rcl_publish(&killswitch_publisher, &kill_msg, NULL));
     }

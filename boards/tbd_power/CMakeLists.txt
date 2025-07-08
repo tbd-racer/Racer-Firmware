@@ -52,4 +52,5 @@ target_link_libraries(tbd_power PUBLIC
 	micro_ros_can	  # Micro ros support (supports _can, _usb, _eth)
 	
 	pico_stdlib		  # Pico SDK Standard Library
+	pico_stdio_usb
 )

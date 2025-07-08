@@ -42,13 +42,4 @@ enum kill_switch {
     NUM_KILL_SWITCHES
 };
 
-typedef enum rm_ks_states {
-    REMOTE_KILL_SWITCH_NO_CONTACT,
-    REMOTE_KILL_SWITCH_ASSERTING,
-    REMOTE_KILL_SWITCH_NOT_ASSERTING,
-    REMOTE_KILL_SWITCH_DISABLED
-} remote_kill_switch_states_t;
-
-void set_radio_kill_switch_state(uint32_t switch_id, remote_kill_switch_states_t remote_kill_switch_state);
-
 #endif

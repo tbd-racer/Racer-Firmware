@@ -52,7 +52,7 @@ void led_network_online_set(bool value);
 void led_ros_connected_set(bool value);
 
 /**
- * @brief Set LED to refrlect if the kill switch is inserted
+ * @brief Set LED to reflect if the kill switch is inserted
  *
  * @param value True if the kill switch is inserted
  */

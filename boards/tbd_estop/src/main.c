@@ -12,6 +12,7 @@
 #include "driver/ws2812.h"
 #include "pico/binary_info.h"
 #include "titan/logger.h"
+#include "titan/version.h"
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
@@ -150,6 +151,7 @@ int main() {
         }
     }
 
+    LOG_INFO("%s", FULL_BUILD_TAG);
     LOG_INFO("Initializing radio");
 
     // setup hardware spi 0
@@ -171,8 +173,7 @@ int main() {
 
     LOG_INFO("Radio init complete");
 
-    uint8_t message[2];
-    bool kill_state_asserting = false;
+    bool kill_state_asserting = true;
     bool require_kill = true;
 
     uint16_t hold_count = 0;
@@ -220,13 +221,12 @@ int main() {
 
         // Send a radio packet when ready
         if (timer_ready(&next_radio_xmit, 100, true)) {
-            // ID byte
-            message[0] = REM_KILLSWITCH_ID;
+            uint8_t message[3] = { RADIO_MAGIC_BYTE, REM_KILLSWITCH_ID, 0x00 };
             // status byte = 000(required)000(is_asserting)
-            message[1] = ((uint8_t)require_kill << 4) & (uint8_t)kill_state_asserting;
+            message[2] = ((uint8_t)require_kill << 4) | (uint8_t)kill_state_asserting;
 
             // Send the message
-            rfm9x_send(&radio, message, 2, false);
+            rfm9x_send(&radio, message, 3, false);
         }
 
         // establish a sleep to conserve power

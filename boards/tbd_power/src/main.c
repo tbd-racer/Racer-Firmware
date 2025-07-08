@@ -113,7 +113,7 @@ static void tick_ros_tasks() {
     }
 
     // Send killswitch updates
-    if (timer_ready(&next_status_update, FIRMWARE_STATUS_TIME_MS, true)) {
+    if (timer_ready(&next_kill_update, KILLSWITCH_TIME_MS, true)) {
         RCSOFTRETVCHECK(ros_update_killswitches());
     }
 }
@@ -135,12 +135,14 @@ static void tick_background_tasks() {
 }
 
 static void handle_radio_packets(uint8_t packet_buffer[]) {
-    uint8_t id = packet_buffer[0];
-    uint8_t stop_request = packet_buffer[1];
-    if (stop_request > 0) {
-        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_ASSERTING);
-    } else {
-        set_radio_kill_switch_state(id, REMOTE_KILL_SWITCH_NOT_ASSERTING);
+    // Data starts at index 1 since index 0 is the magic byte
+    uint8_t id = packet_buffer[1];
+    bool is_required = packet_buffer[2] & 0x10;
+    bool is_asserting = packet_buffer[2] & 0x01;
+    safety_kill_switch_update(id, is_asserting, is_required);
+
+    if (id != 1) {
+        LOG_INFO("Updated switch id: %x, req: %u, asrt: %u", id, is_required, is_asserting);
     }
 }
 
@@ -156,7 +158,7 @@ int main() {
     led_init();
     micro_ros_init_error_handling();
     async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
-    ads7828_init();
+    // ads7828_init();
 
     // Now pull up the GPIO
     gpio_init(PACK1_ACTIVE_PIN);
@@ -189,8 +191,7 @@ int main() {
     gpio_set_function(RADIO_SCK_PIN, GPIO_FUNC_SPI);
 
     if (!rfm9x_init(&radio, spi1, RADIO_NCS_PIN, RADIO_RST_PIN, RADIO_FREQUENCY)) {
-        LOG_INFO("Radio initialization failed!\n");
-        return -1;
+        panic("Radio initialization failed!");
     }
 
     rfm9x_set_spreading_factor(&radio, RADIO_SPREADING_FACTOR);
@@ -259,8 +260,8 @@ int main() {
 
         // handle radio traffic
         uint8_t packet_buffer[256];
-        int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer), true, false, false, 100);
-        if (received > 0) {
+        int received = rfm9x_receive(&radio, packet_buffer, sizeof(packet_buffer), true, false, false, 30);
+        if (received > 0 && packet_buffer[0] == RADIO_MAGIC_BYTE) {
             handle_radio_packets(packet_buffer);
         }
 
