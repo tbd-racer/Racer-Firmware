@@ -21,6 +21,7 @@
 #define BTN_UPDATE_PERIOD_MS 100
 #define LED_UPDATE_PERIOD_MS 250
 #define RAD_UPDATE_PERIOD_MS 100
+#define LED_POWER 100u
 
 bi_decl(bi_3pins_with_func(RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_SCK_PIN, GPIO_FUNC_SPI));
 bi_decl(bi_1pin_with_name(RADIO_CS_PIN, "RADIO CS"));
@@ -84,27 +85,27 @@ void update_btn_led(bool required, bool kill_asserting) {
         if (kill_asserting) {
             // If required and killed show solid red
             commands[0].data = 0u;
-            commands[0].cmd.red = 50u;
+            commands[0].cmd.red = LED_POWER;
         } else {
-            // if not asserting show solid green
+            // if not asserting show solid blue
             commands[0].data = 0u;
-            commands[0].cmd.green = 50u;
+            commands[0].cmd.blue = LED_POWER;
         }
     } else {
         if (tick_type == TICK_TYPE_A) {
             // A tick is always yellow
             commands[0].data = 0u;
-            commands[0].cmd.red = 50u;
-            commands[0].cmd.green = 50u;
+            commands[0].cmd.red = LED_POWER;
+            commands[0].cmd.green = LED_POWER;
         } else if (kill_asserting && tick_type == TICK_TYPE_B) {
             // If not required, but killed show red on B tick
             commands[0].data = 0u;
-            commands[0].cmd.red = 50u;
+            commands[0].cmd.red = LED_POWER;
 
         } else {
-            // if not required, and active show green on B tick
+            // if not required, and active show blue on B tick
             commands[0].data = 0u;
-            commands[0].cmd.green = 50u;
+            commands[0].cmd.blue = LED_POWER;
         }
     }
 
