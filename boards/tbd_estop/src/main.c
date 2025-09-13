@@ -1,5 +1,6 @@
 #include <hardware/gpio.h>
 #include <hardware/pio.h>
+#include <hardware/watchdog.h>
 #include <pico/stdio.h>
 #include <pico/stdio_usb.h>
 #include <pico/time.h>
@@ -16,6 +17,9 @@
 
 #undef LOGGING_UNIT_NAME
 #define LOGGING_UNIT_NAME "main"
+
+/// Watchdog timeout in milliseconds (0.1 seconds)
+#define WATCHDOG_TIMEOUT_MS 100
 
 #define BTN_DEBOUNCE_MS 500
 #define BTN_UPDATE_PERIOD_MS 100
@@ -157,6 +161,9 @@ int main() {
         }
     }
 
+    watchdog_enable(WATCHDOG_TIMEOUT_MS, false);
+    watchdog_start_tick(12);
+
     LOG_INFO("%s", FULL_BUILD_TAG);
     LOG_INFO("Initializing radio");
 
@@ -236,6 +243,9 @@ int main() {
 
         // establish a sleep to conserve power
         // sleep_ms(1);
+
+        // Update watchdog to prevent system reset
+        watchdog_update();
     }
 
     return 0;

@@ -50,6 +50,6 @@ target_link_libraries(estop PUBLIC
 	pico_stdlib		  # Pico SDK Standard Library
 	pico_stdio_usb
 	pico_rand
-
+	hardware_watchdog
 	titan_logger
 )
