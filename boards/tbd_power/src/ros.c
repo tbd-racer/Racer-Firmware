@@ -1,5 +1,6 @@
 #include "ros.h"
 
+#include <chassis_msgs/msg/electrical_readings.h>
 #include <chassis_msgs/msg/firmware_status.h>
 #include <chassis_msgs/msg/killswitch_report.h>
 #include <chassis_msgs/srv/restart_power_channel.h>
@@ -27,6 +28,7 @@
 #define HEARTBEAT_PUBLISHER_NAME "state/fw_heartbeat"
 #define FIRMWARE_STATUS_PUBLISHER_NAME "state/firmware"
 #define KILLSWITCH_STATUS_PUBLISHER_NAME "safety/kill"
+#define ELECTRICAL_READINGS_PUBLISHER_NAME "state/electrical"
 #define CHANNEL_RESTART_SERVICE_NAME "state/restart"
 
 bool ros_connected = false;
@@ -42,6 +44,7 @@ int failed_heartbeats = 0;
 // Node specific Variables
 rcl_publisher_t firmware_status_publisher;
 rcl_publisher_t killswitch_publisher;
+rcl_publisher_t electrical_readings_publisher;
 rcl_service_t channel_restart_service;
 chassis_msgs__srv__RestartPowerChannel_Request channel_restart_request_msg;
 chassis_msgs__srv__RestartPowerChannel_Response channel_restart_response_msg;
@@ -145,6 +148,35 @@ rcl_ret_t ros_update_killswitches(void) {
     return RCL_RET_OK;
 }
 
+/// @brief Publish electrical readings data
+/// @param battery_1_voltage Battery 1 voltage reading
+/// @param battery_2_voltage Battery 2 voltage reading  
+/// @param input_voltage Input voltage reading
+/// @param regulator_15v 15V regulator voltage reading
+/// @param regulator_12v 12V regulator voltage reading
+/// @param regulator_5v 5V regulator voltage reading
+/// @param is_battery_1 Flag indicating if battery 1 is supplying power
+/// @param is_battery_2 Flag indicating if battery 2 is supplying power
+/// @return rcl_ret_t Return error code
+rcl_ret_t ros_update_electrical_readings(float battery_1_voltage, float battery_2_voltage, 
+                                        float input_voltage, float regulator_15v, 
+                                        float regulator_12v, float regulator_5v,
+                                        bool is_battery_1, bool is_battery_2) {
+    chassis_msgs__msg__ElectricalReadings electrical_msg;
+    electrical_msg.battery_1_voltage = battery_1_voltage;
+    electrical_msg.battery_2_voltage = battery_2_voltage;
+    electrical_msg.input_voltage = input_voltage;
+    electrical_msg.regulator_15v = regulator_15v;
+    electrical_msg.regulator_12v = regulator_12v;
+    electrical_msg.regulator_5v = regulator_5v;
+    electrical_msg.is_battery_1 = is_battery_1;
+    electrical_msg.is_battery_2 = is_battery_2;
+
+    RCSOFTRETCHECK(rcl_publish(&electrical_readings_publisher, &electrical_msg, NULL));
+
+    return RCL_RET_OK;
+}
+
 // ========================================
 // ROS Core
 // ========================================
@@ -171,6 +203,10 @@ rcl_ret_t ros_init(uint8_t board_id) {
                                            ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, KillswitchReport),
                                            KILLSWITCH_STATUS_PUBLISHER_NAME));
 
+    RCRETCHECK(rclc_publisher_init_default(&electrical_readings_publisher, &node,
+                                           ROSIDL_GET_MSG_TYPE_SUPPORT(chassis_msgs, msg, ElectricalReadings),
+                                           ELECTRICAL_READINGS_PUBLISHER_NAME));
+
     RCRETCHECK(rclc_service_init_default(&channel_restart_service, &node,
                                          ROSIDL_GET_SRV_TYPE_SUPPORT(chassis_msgs, srv, RestartPowerChannel),
                                          CHANNEL_RESTART_SERVICE_NAME));
@@ -195,6 +231,7 @@ void ros_fini(void) {
     RCSOFTCHECK(rcl_publisher_fini(&heartbeat_publisher, &node));
     RCSOFTCHECK(rcl_publisher_fini(&firmware_status_publisher, &node));
     RCSOFTCHECK(rcl_publisher_fini(&killswitch_publisher, &node));
+    RCSOFTCHECK(rcl_publisher_fini(&electrical_readings_publisher, &node));
     RCSOFTCHECK(rcl_service_fini(&channel_restart_service, &node));
     RCSOFTCHECK(rclc_executor_fini(&executor));
     RCSOFTCHECK(rcl_node_fini(&node));

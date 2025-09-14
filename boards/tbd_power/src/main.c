@@ -4,6 +4,7 @@
 #include "driver/canbus.h"
 #include "driver/led.h"
 #include "driver/rfm9x.h"
+#include "hardware/i2c.h"
 #include "micro_ros_pico/transport_can.h"
 #include "pico/stdlib.h"
 #include "ros.h"
@@ -18,9 +19,26 @@
 #define HEARTBEAT_TIME_MS 100
 #define FIRMWARE_STATUS_TIME_MS 1000
 #define KILLSWITCH_TIME_MS 100
+#define ELECTRICAL_READINGS_TIME_MS 500
 #define LED_UPTIME_INTERVAL_MS 250
 #define CHANNEL_RESTART_TIME_MS 1000
-#define RADIO_RX_TIMEOUT_MS 20
+#define RADIO_RX_TIMEOUT_MS 10
+
+/// ADC Channel definitions for voltage monitoring
+#define ADC_CHANNEL_BATTERY_1 0
+#define ADC_CHANNEL_BATTERY_2 1
+#define ADC_CHANNEL_INPUT_VOLTAGE 2
+#define ADC_CHANNEL_REGULATOR_15V 3
+#define ADC_CHANNEL_REGULATOR_12V 4
+#define ADC_CHANNEL_REGULATOR_5V 5
+
+/// Voltage divider scaling factors (these may need adjustment based on actual circuit)
+#define VOLTAGE_SCALE_BATTERY 0.01f  // Scale factor for battery voltage readings
+#define VOLTAGE_SCALE_5V 0.01f       // Scale factor for 5V regulator voltage readings
+#define VOLTAGE_SCALE_12V 0.005f     // Scale factor for 12V regulator voltage readings
+#define VOLTAGE_SCALE_15V 0.005f     // Scale factor for 15V regulator voltage readings
+#define ADC_REFERENCE_VOLTAGE 3.3f   // ADC reference voltage
+#define ADC_MAX_VALUE 4095.0f        // 12-bit ADC maximum value
 
 // rfm radio for estop communication
 rfm9x_t radio;
@@ -34,6 +52,7 @@ bool power_channel_restart_active = false;
 absolute_time_t next_heartbeat = { 0 };
 absolute_time_t next_status_update = { 0 };
 absolute_time_t next_kill_update = { 0 };
+absolute_time_t next_electrical_update = { 0 };
 absolute_time_t next_led_update = { 0 };
 absolute_time_t next_connect_ping = { 0 };
 absolute_time_t next_display_update = { 0 };
@@ -81,6 +100,23 @@ static void start_ros_timers() {
     next_heartbeat = make_timeout_time_ms(HEARTBEAT_TIME_MS);
     next_status_update = make_timeout_time_ms(FIRMWARE_STATUS_TIME_MS);
     next_kill_update = make_timeout_time_ms(KILLSWITCH_TIME_MS);
+    next_electrical_update = make_timeout_time_ms(ELECTRICAL_READINGS_TIME_MS);
+}
+
+/// @brief Convert ADC reading to voltage with scaling factor
+/// @param adc_reading Raw ADC reading (0-4095)
+/// @param scale_factor Voltage divider scaling factor
+/// @return Voltage in volts
+static float adc_to_voltage(uint16_t adc_reading, float scale_factor) {
+    if (adc_reading == ADS7828_READ_ERROR) {
+        LOG_WARN("ADC reading not ready");
+        return 0.0f;  // Return 0 for not ready readings
+    }
+    if (adc_reading == ADS7828_WRITE_ERROR) {
+        LOG_WARN("ADC reading invalid");
+        return 0.0f;  // Return 0 for invalid readings
+    }
+    return ((float)adc_reading / ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE / scale_factor;
 }
 
 int mapROSPinToGPIOPin(int pin) {
@@ -116,6 +152,50 @@ static void tick_ros_tasks() {
     // Send killswitch updates
     if (timer_ready(&next_kill_update, KILLSWITCH_TIME_MS, true)) {
         RCSOFTRETVCHECK(ros_update_killswitches());
+    }
+
+    // Send electrical readings updates
+    if (timer_ready(&next_electrical_update, ELECTRICAL_READINGS_TIME_MS, true)) {
+        // Read all ADC channels and convert to voltages
+        float battery_1_voltage = 0.0f;
+        float battery_2_voltage = 0.0f;
+        float input_voltage = 0.0f;
+        float regulator_15v = 0.0f;
+        float regulator_12v = 0.0f;
+        float regulator_5v = 0.0f;
+
+        // Read battery 1 voltage
+        uint16_t adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_BATTERY_1);
+        battery_1_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
+
+        // // Read battery 2 voltage
+        adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_BATTERY_2);
+        battery_2_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
+
+        // // Read input voltage
+        adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_INPUT_VOLTAGE);
+        input_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
+
+        // // Read 15V regulator voltage
+        adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_15V);
+        regulator_15v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_15V);
+
+        // // Read 12V regulator voltage
+        adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_12V);
+        regulator_12v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_12V);
+
+        // // Read 5V regulator voltage
+        adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_5V);
+        regulator_5v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_5V);
+
+        // Determine which battery is active based on GPIO pins
+        bool is_battery_1 = !gpio_get(PACK1_ACTIVE_PIN);  // Assuming active low
+        bool is_battery_2 = !gpio_get(PACK2_ACTIVE_PIN);  // Assuming active low
+
+        // Publish electrical readings
+        RCSOFTRETVCHECK(ros_update_electrical_readings(battery_1_voltage, battery_2_voltage, input_voltage,
+                                                       regulator_15v, regulator_12v, regulator_5v, is_battery_1,
+                                                       is_battery_2));
     }
 }
 
@@ -154,7 +234,28 @@ static void handle_radio_packets(uint8_t received, uint8_t packet_buffer[]) {
 int main() {
     // Initialize stdio
     stdio_init_all();
+
+    while (to_ms_since_boot(get_absolute_time()) < 5000) {
+        LOG_INFO("Waiting for serial...");
+
+        sleep_ms(250);
+
+        // handle exit conditions
+        if (stdio_usb_connected()) {
+            break;
+        }
+    }
+
     LOG_INFO("%s", FULL_BUILD_TAG);
+    LOG_INFO("Initializing power board");
+
+    i2c_init(__CONCAT(i2c, PERIPH_I2C), 400000);
+    gpio_set_function(PERIPH_SCL_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(PERIPH_SDA_PIN, GPIO_FUNC_I2C);
+    gpio_pull_up(PERIPH_SCL_PIN);
+    gpio_pull_up(PERIPH_SDA_PIN);
+
+    LOG_INFO("NOU");
 
     // Perform all initializations
     // NOTE: Safety must be the first thing up after stdio, so the watchdog will
@@ -162,8 +263,7 @@ int main() {
     safety_setup();
     led_init();
     micro_ros_init_error_handling();
-    async_i2c_init(PERIPH_SDA_PIN, PERIPH_SCL_PIN, -1, -1, 400000, 20);
-    // ads7828_init();
+    ads7828_init();
 
     // Now pull up the GPIO
     gpio_init(PACK1_ACTIVE_PIN);

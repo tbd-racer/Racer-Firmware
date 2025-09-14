@@ -25,7 +25,7 @@
 #define BTN_UPDATE_PERIOD_MS 100
 #define LED_UPDATE_PERIOD_MS 250
 #define RAD_UPDATE_PERIOD_MS 100
-#define LED_POWER 100u
+#define LED_POWER 200u
 
 bi_decl(bi_3pins_with_func(RADIO_MISO_PIN, RADIO_MOSI_PIN, RADIO_SCK_PIN, GPIO_FUNC_SPI));
 bi_decl(bi_1pin_with_name(RADIO_CS_PIN, "RADIO CS"));

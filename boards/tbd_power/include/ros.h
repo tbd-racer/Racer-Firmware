@@ -93,6 +93,21 @@ rcl_ret_t ros_update_firmware_status(uint8_t client_id);
 
 rcl_ret_t ros_update_killswitches(void);
 
+/// @brief Publish electrical readings data
+/// @param battery_1_voltage Battery 1 voltage reading
+/// @param battery_2_voltage Battery 2 voltage reading  
+/// @param input_voltage Input voltage reading
+/// @param regulator_15v 15V regulator voltage reading
+/// @param regulator_12v 12V regulator voltage reading
+/// @param regulator_5v 5V regulator voltage reading
+/// @param is_battery_1 Flag indicating if battery 1 is supplying power
+/// @param is_battery_2 Flag indicating if battery 2 is supplying power
+/// @return rcl_ret_t Return error code
+rcl_ret_t ros_update_electrical_readings(float battery_1_voltage, float battery_2_voltage, 
+                                        float input_voltage, float regulator_15v, 
+                                        float regulator_12v, float regulator_5v,
+                                        bool is_battery_1, bool is_battery_2);
+
 void channel_restart_callback(const void* request_msg, void* response_msg);
 
 static uint8_t channel_restart = 255;  // 255 means no channel restart requested
