@@ -34,7 +34,7 @@ uint16_t ads7828_read_channel_blocking(uint8_t channel) {
     tx_buf[0] = make_channel_command(channel);
     
     /// Write command to select channel (also triggers conversion)
-    int ret = i2c_write_blocking(ADS7828_I2C_INST, ADS7828_I2C_ADDR >> 1, tx_buf, ADS7828_WRITE_LEN, false);
+    int ret = i2c_write_blocking(ADS7828_I2C_INST, ADS7828_I2C_ADDR >> 1, tx_buf, ADS7828_WRITE_LEN, true);
     if (ret == PICO_ERROR_GENERIC) {
         return ADS7828_WRITE_ERROR;
     }

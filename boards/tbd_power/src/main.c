@@ -1,4 +1,6 @@
 #include <chassis_msgs/srv/restart_power_channel.h>
+#include <hardware/gpio.h>
+#include <pico/types.h>
 
 #include "driver/ads7828.h"
 #include "driver/canbus.h"
@@ -25,20 +27,20 @@
 #define RADIO_RX_TIMEOUT_MS 10
 
 /// ADC Channel definitions for voltage monitoring
-#define ADC_CHANNEL_BATTERY_1 0
-#define ADC_CHANNEL_BATTERY_2 1
-#define ADC_CHANNEL_INPUT_VOLTAGE 2
-#define ADC_CHANNEL_REGULATOR_15V 3
-#define ADC_CHANNEL_REGULATOR_12V 4
-#define ADC_CHANNEL_REGULATOR_5V 5
+#define ADC_CHANNEL_BATTERY_1 4
+#define ADC_CHANNEL_BATTERY_2 5
+#define ADC_CHANNEL_INPUT_VOLTAGE 3
+#define ADC_CHANNEL_REGULATOR_15V 0
+#define ADC_CHANNEL_REGULATOR_12V 1
+#define ADC_CHANNEL_REGULATOR_5V 2
 
 /// Voltage divider scaling factors (these may need adjustment based on actual circuit)
-#define VOLTAGE_SCALE_BATTERY 0.01f  // Scale factor for battery voltage readings
-#define VOLTAGE_SCALE_5V 0.01f       // Scale factor for 5V regulator voltage readings
-#define VOLTAGE_SCALE_12V 0.005f     // Scale factor for 12V regulator voltage readings
-#define VOLTAGE_SCALE_15V 0.005f     // Scale factor for 15V regulator voltage readings
-#define ADC_REFERENCE_VOLTAGE 3.3f   // ADC reference voltage
-#define ADC_MAX_VALUE 4095.0f        // 12-bit ADC maximum value
+#define VOLTAGE_SCALE_BATTERY 10.989f  // Scale factor for battery voltage readings
+#define VOLTAGE_SCALE_5V 5.973f       // Scale factor for 5V regulator voltage readings
+#define VOLTAGE_SCALE_12V 5.987f       // Scale factor for 12V regulator voltage readings
+#define VOLTAGE_SCALE_15V 6.003f         // Scale factor for 15V regulator voltage readings
+#define ADC_REF 2.5f / 4096.0f         // ADC reference voltage
+#define MIN_INPUT_VOLTAGE 16.0f       // Minimum input voltage before shutdown
 
 // rfm radio for estop communication
 rfm9x_t radio;
@@ -53,6 +55,7 @@ absolute_time_t next_heartbeat = { 0 };
 absolute_time_t next_status_update = { 0 };
 absolute_time_t next_kill_update = { 0 };
 absolute_time_t next_electrical_update = { 0 };
+absolute_time_t next_shutdown_check = { 0 };
 absolute_time_t next_led_update = { 0 };
 absolute_time_t next_connect_ping = { 0 };
 absolute_time_t next_display_update = { 0 };
@@ -109,14 +112,14 @@ static void start_ros_timers() {
 /// @return Voltage in volts
 static float adc_to_voltage(uint16_t adc_reading, float scale_factor) {
     if (adc_reading == ADS7828_READ_ERROR) {
-        LOG_WARN("ADC reading not ready");
+        LOG_WARN("ADC reading invalid");
         return 0.0f;  // Return 0 for not ready readings
     }
     if (adc_reading == ADS7828_WRITE_ERROR) {
-        LOG_WARN("ADC reading invalid");
+        LOG_WARN("ADC reading not ready");
         return 0.0f;  // Return 0 for invalid readings
     }
-    return ((float)adc_reading / ADC_MAX_VALUE) * ADC_REFERENCE_VOLTAGE / scale_factor;
+    return ((float)adc_reading) * ADC_REF * scale_factor;
 }
 
 int mapROSPinToGPIOPin(int pin) {
@@ -168,23 +171,23 @@ static void tick_ros_tasks() {
         uint16_t adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_BATTERY_1);
         battery_1_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
 
-        // // Read battery 2 voltage
+        // Read battery 2 voltage
         adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_BATTERY_2);
         battery_2_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
 
-        // // Read input voltage
+        // Read input voltage
         adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_INPUT_VOLTAGE);
         input_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
 
-        // // Read 15V regulator voltage
+        // Read 15V regulator voltage
         adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_15V);
         regulator_15v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_15V);
 
-        // // Read 12V regulator voltage
+        // Read 12V regulator voltage
         adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_12V);
         regulator_12v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_12V);
 
-        // // Read 5V regulator voltage
+        // Read 5V regulator voltage
         adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_REGULATOR_5V);
         regulator_5v = adc_to_voltage(adc_reading, VOLTAGE_SCALE_5V);
 
@@ -213,6 +216,25 @@ static void tick_background_tasks() {
         // Reset the channel restart request
         channel_restart = 255;
     }
+
+    if(timer_ready(&next_shutdown_check, ELECTRICAL_READINGS_TIME_MS, true)) {
+        // Check if the shutdown condition is met
+        uint16_t adc_reading = ads7828_read_channel_blocking(ADC_CHANNEL_INPUT_VOLTAGE);
+        float input_voltage = adc_to_voltage(adc_reading, VOLTAGE_SCALE_BATTERY);
+
+        if(input_voltage > 0.5 && input_voltage < MIN_INPUT_VOLTAGE) {
+            LOG_ERROR("Input voltage too low: %.2f V. Initiating shutdown.", input_voltage);
+            safety_raise_fault(FAULT_UNDERVOLTAGE);
+
+            gpio_put(AGX_PWR_CTL_PIN, 0);
+            gpio_put(LIDR_PWR_CTL_PIN, 0);
+            gpio_put(NET_PWR_CTL_PIN, 0);
+            gpio_put(NANO_PWR_CTL_PIN, 0);
+        } else {
+            LOG_INFO("Input voltage OK: %.2f V.", input_voltage);
+            safety_lower_fault(FAULT_UNDERVOLTAGE);
+        }
+    }
 }
 
 static void handle_radio_packets(uint8_t received, uint8_t packet_buffer[]) {
@@ -234,17 +256,6 @@ static void handle_radio_packets(uint8_t received, uint8_t packet_buffer[]) {
 int main() {
     // Initialize stdio
     stdio_init_all();
-
-    while (to_ms_since_boot(get_absolute_time()) < 5000) {
-        LOG_INFO("Waiting for serial...");
-
-        sleep_ms(250);
-
-        // handle exit conditions
-        if (stdio_usb_connected()) {
-            break;
-        }
-    }
 
     LOG_INFO("%s", FULL_BUILD_TAG);
     LOG_INFO("Initializing power board");

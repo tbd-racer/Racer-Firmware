@@ -12,11 +12,12 @@
 #define FAULT_ROS_ERROR 4
 #define FAULT_TIMER_MISSED 5
 #define FAULT_RFM95_ERROR 6
+#define FAULT_UNDERVOLTAGE 7
 
 static const char* const fault_string_list[] = { "FAULT_WATCHDOG_RESET",     "FAULT_WATCHDOG_WARNING",
                                                  "FAULT_CAN_INTERNAL_ERROR", "FAULT_CAN_RECV_ERROR",
                                                  "FAULT_ROS_ERROR",          "FAULT_TIMER_MISSED",
-                                                 "FAULT_RFM95_ERROR" };
+                                                 "FAULT_RFM95_ERROR",        "FAULT_UNDERVOLTAGE" };
 
 const char* safety_lookup_killswitch_id(uint32_t switch_id);
 
